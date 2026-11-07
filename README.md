@@ -86,6 +86,8 @@ Health endpoints are available through the gateway at `/api/orders/health/live`,
 
 The browser demo completes the PKCE authorization flow and keeps access tokens in memory. The imported local users use the password shown in `.env.example`; change all credentials before using any shared environment.
 
+The internal inventory catalogue is restricted to the confidential `orders-service` client, the `inventory.catalog.read` scope, and the dedicated `inventory-reader` policy role. Its local secret and actor mapping are synthetic development credentials only.
+
 For recovery and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
 
 ## Engineering principles

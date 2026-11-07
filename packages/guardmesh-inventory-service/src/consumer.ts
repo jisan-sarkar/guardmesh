@@ -102,6 +102,24 @@ export class InventoryService {
     return this.store.list(actor.locationId);
   }
 
+  public async getCatalogue(actor: InventoryActor): Promise<InventoryState["items"]> {
+    const decision = await this.policy.authorize({
+      actorId: actor.actorId,
+      actorRoles: actor.roles,
+      actorLocationId: actor.locationId,
+      action: "inventory.catalogue.read",
+      resourceType: "inventory",
+      resourceId: actor.locationId,
+      resourceLocationId: actor.locationId,
+    });
+    if (!decision.allow) {
+      defaultMetrics.increment(guardMeshMetrics.authorizationDenied);
+      throw new InventoryForbiddenError(decision);
+    }
+    defaultMetrics.increment(guardMeshMetrics.authorizationAllowed);
+    return this.store.list(actor.locationId);
+  }
+
   public async adjustStock(
     actor: InventoryActor,
     input: unknown,

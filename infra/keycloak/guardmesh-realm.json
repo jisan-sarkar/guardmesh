@@ -15,6 +15,19 @@
       "redirectUris": ["http://localhost/*"],
       "webOrigins": ["http://localhost"] ,
       "defaultClientScopes": ["profile", "email", "roles", "guardmesh-api-audience"]
+    },
+    {
+      "clientId": "orders-service",
+      "name": "GuardMesh orders service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "orders-service-change-me-local-only",
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "defaultClientScopes": ["guardmesh-api-audience", "inventory.catalog.read"]
     }
   ],
   "clientScopes": [
@@ -30,6 +43,11 @@
           "config": {"included.client.audience": "guardmesh-api", "access.token.claim": "true"}
         }
       ]
+    },
+    {
+      "name": "inventory.catalog.read",
+      "protocol": "openid-connect",
+      "attributes": {"include.in.token.scope": "true"}
     }
   ],
   "users": [

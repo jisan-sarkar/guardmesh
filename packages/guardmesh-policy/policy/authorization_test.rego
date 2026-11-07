@@ -47,3 +47,27 @@ test_unknown_action_is_denied if {
 	}
 	not decision.allow
 }
+
+test_inventory_reader_can_read_catalogue if {
+	decision := data.guardmesh.authorization.decision with input as {
+		"actorRoles": ["inventory-reader"],
+		"actorLocationId": "loc-a",
+		"action": "inventory.catalogue.read",
+		"resourceType": "inventory",
+		"resourceId": "loc-a",
+		"resourceLocationId": "loc-a",
+	}
+	decision.allow
+}
+
+test_manager_cannot_use_catalogue_action if {
+	decision := data.guardmesh.authorization.decision with input as {
+		"actorRoles": ["manager"],
+		"actorLocationId": "loc-a",
+		"action": "inventory.catalogue.read",
+		"resourceType": "inventory",
+		"resourceId": "loc-a",
+		"resourceLocationId": "loc-a",
+	}
+	not decision.allow
+}

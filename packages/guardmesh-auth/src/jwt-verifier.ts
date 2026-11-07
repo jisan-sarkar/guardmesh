@@ -13,6 +13,7 @@ export type JwtVerifierConfig = Readonly<{
 
 export type VerifiedAccessToken = Readonly<{
   subject: string;
+  clientId?: string;
   issuer: string;
   audience: string[];
   expiresAt: number;
@@ -47,6 +48,11 @@ function toVerifiedAccessToken(payload: JWTPayload): VerifiedAccessToken {
 
   return {
     subject: payload.sub,
+    ...(typeof payload.azp === "string"
+      ? { clientId: payload.azp }
+      : typeof payload.client_id === "string"
+        ? { clientId: payload.client_id }
+        : {}),
     issuer: payload.iss,
     audience,
     expiresAt: payload.exp,

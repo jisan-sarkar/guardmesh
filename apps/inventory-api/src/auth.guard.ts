@@ -30,7 +30,8 @@ export class AccessTokenGuard implements CanActivate {
 
     try {
       const verified = await this.verifyToken(token);
-      const actor = await this.actorDirectory.findBySubject(verified.subject);
+      const actor = await this.actorDirectory.findBySubject(verified.subject)
+        ?? (verified.clientId ? await this.actorDirectory.findBySubject(verified.clientId) : undefined);
       if (!actor) throw new UnauthorizedException();
       request.actor = actor;
       request.accessToken = verified;

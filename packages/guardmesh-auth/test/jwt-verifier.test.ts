@@ -54,6 +54,12 @@ describe("JWT access-token verification", () => {
     await expect(verifier(token)).resolves.toMatchObject({ scopes: ["openid", "inventory.catalog.read"] });
   });
 
+  it("exposes the authorized-party client id for service-token identity mapping", async () => {
+    const { privateKey, verifier } = await createVerifierFixture();
+    const token = await createToken(privateKey, { azp: "orders-service" });
+    await expect(verifier(token)).resolves.toMatchObject({ clientId: "orders-service" });
+  });
+
   it("rejects a token with the wrong audience", async () => {
     const { privateKey, verifier } = await createVerifierFixture();
     const token = await new SignJWT()

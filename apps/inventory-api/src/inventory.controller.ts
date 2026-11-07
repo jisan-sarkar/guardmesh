@@ -59,7 +59,7 @@ export class InternalInventoryController {
   @Get("catalogue")
   public catalogue(@Req() request: AuthenticatedRequest) {
     if (!request.actor) throw new ForbiddenException();
-    return this.inventory.getItems(request.actor);
+    return this.inventory.getCatalogue(request.actor);
   }
 }
 

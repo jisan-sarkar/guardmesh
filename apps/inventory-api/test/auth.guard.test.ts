@@ -27,6 +27,22 @@ describe("inventory access-token guard", () => {
     expect((context.switchToHttp().getRequest() as { actor: unknown }).actor).toEqual(actor);
   });
 
+  it("maps service tokens by authorized-party client id when the subject is ephemeral", async () => {
+    const actor = { actorId: "orders-service", roles: ["inventory-reader"], locationId: "loc-a" };
+    const context = contextFor("Bearer service-token");
+    const guard = new AccessTokenGuard(
+      vi.fn().mockResolvedValue({
+        subject: "service-account-generated-id",
+        clientId: "orders-service",
+        scopes: ["inventory.catalog.read"],
+      }),
+      new InMemoryActorDirectory(new Map([["orders-service", actor]])),
+    );
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect((context.switchToHttp().getRequest() as { actor: unknown }).actor).toEqual(actor);
+  });
+
   it("requires the internal catalogue scope", async () => {
     const guard = new InternalCatalogScopeGuard();
     const context = contextFor("Bearer valid");

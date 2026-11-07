@@ -48,6 +48,13 @@ allow if {
 }
 
 allow if {
+	input.action == "inventory.catalogue.read"
+	input.resourceType == "inventory"
+	input.actorRoles[_] == "inventory-reader"
+	locations_match
+}
+
+allow if {
 	input.action == "inventory.adjust"
 	input.resourceType == "inventory"
 	input.actorRoles[_] == "manager"

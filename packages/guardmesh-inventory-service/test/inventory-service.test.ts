@@ -37,6 +37,23 @@ describe("inventory service", () => {
     expect(authorize).toHaveBeenCalledWith(expect.objectContaining({ action: "inventory.read" }));
   });
 
+  it("uses a dedicated policy action for the internal catalogue", async () => {
+    const { authorize, service } = createService();
+    const serviceActor = { actorId: "orders-service", roles: ["inventory-reader"], locationId: "loc-a" };
+
+    await expect(service.getCatalogue(serviceActor)).resolves.toMatchObject({ "sku-1": { available: 5 } });
+    expect(authorize).toHaveBeenCalledWith(expect.objectContaining({
+      action: "inventory.catalogue.read",
+      actorId: "orders-service",
+    }));
+  });
+
+  it("denies catalogue access when the dedicated policy rejects it", async () => {
+    const { service } = createService({ allow: false, reason: "not a service identity", policyVersion: "inventory-v1" });
+    await expect(service.getCatalogue({ actorId: "manager-1", roles: ["manager"], locationId: "loc-a" }))
+      .rejects.toBeInstanceOf(InventoryForbiddenError);
+  });
+
   it("requires policy approval for stock adjustment", async () => {
     const { authorize, service } = createService();
 
