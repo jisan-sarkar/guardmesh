@@ -502,8 +502,8 @@ importers:
         specifier: workspace:*
         version: link:../guardmesh-policy
       kysely:
-        specifier: ^0.28.8
-        version: 0.28.19
+        specifier: ^0.29.8
+        version: 0.29.8
       pg:
         specifier: ^8.16.3
         version: 8.23.1
@@ -593,8 +593,8 @@ importers:
         specifier: workspace:*
         version: link:../guardmesh-policy
       kysely:
-        specifier: ^0.28.8
-        version: 0.28.19
+        specifier: ^0.29.8
+        version: 0.29.8
       pg:
         specifier: ^8.16.3
         version: 8.23.1
@@ -672,8 +672,8 @@ importers:
         specifier: workspace:*
         version: link:../guardmesh-security-core
       kysely:
-        specifier: ^0.28.8
-        version: 0.28.19
+        specifier: ^0.29.8
+        version: 0.29.8
       pg:
         specifier: ^8.16.3
         version: 8.23.1
@@ -1463,9 +1463,9 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  kysely@0.28.19:
-    resolution: {integrity: sha512-sXoKWuQjtorwxDLiws0ZSPGGne/hs+fGHIII7vXquSBFgHwLXgFIHN9tTv3kNdVkJ5d3xtXC84GjjWMYLqdFWg==}
-    engines: {node: '>=20.0.0'}
+  kysely@0.29.8:
+    resolution: {integrity: sha512-ixHU1H4R+LeC5Y0nAhYgiGRFpFRHm2DXKEmJSs/vbes9sKXyssyzxzE/NYiOJX5fY0BL28biCre3GqlCqUwyXQ==}
+    engines: {node: '>=22.0.0'}
 
   light-my-request@6.6.0:
     resolution: {integrity: sha512-CHYbu8RtboSIoVsHZ6Ye4cj4Aw/yg2oAFimlF7mNvfDV192LR7nDiKtSIfCuLT7KokPSTn/9kfVLm5OGN0A28A==}
@@ -2618,7 +2618,7 @@ snapshots:
 
   json5@2.2.3: {}
 
-  kysely@0.28.19: {}
+  kysely@0.29.8: {}
 
   light-my-request@6.6.0:
     dependencies:
