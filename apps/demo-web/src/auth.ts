@@ -16,6 +16,7 @@ export type AuthorizationCodeExchangeConfig = Readonly<{
   redirectUri: string;
   code: string;
   verifier: string;
+  expectedNonce?: string;
   fetchImpl?: typeof fetch;
 }>;
 
@@ -37,9 +38,11 @@ export async function createCodeChallenge(verifier: string): Promise<string> {
   return base64Url(new Uint8Array(digest));
 }
 
-export async function createAuthorizationUrl(config: OidcConfig): Promise<Readonly<{ url: string; verifier: string }>> {
+export async function createAuthorizationUrl(config: OidcConfig): Promise<Readonly<{ url: string; verifier: string; state: string; nonce: string }>> {
   const verifier = createCodeVerifier();
   const challenge = await createCodeChallenge(verifier);
+  const state = createCodeVerifier();
+  const nonce = createCodeVerifier();
   const url = new URL(`${config.issuer}/protocol/openid-connect/auth`);
   url.search = new URLSearchParams({
     client_id: config.clientId,
@@ -48,8 +51,21 @@ export async function createAuthorizationUrl(config: OidcConfig): Promise<Readon
     scope: config.scope,
     code_challenge: challenge,
     code_challenge_method: "S256",
+    state,
+    nonce,
   }).toString();
-  return { url: url.toString(), verifier };
+  return { url: url.toString(), verifier, state, nonce };
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  const encoded = token.split(".")[1];
+  if (!encoded) throw new Error("id token is malformed");
+  const bytes = Uint8Array.from(atob(encoded.replaceAll("-", "+").replaceAll("_", "/")), (character) => character.charCodeAt(0));
+  const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("id token payload is malformed");
+  }
+  return parsed as Record<string, unknown>;
 }
 
 export async function exchangeAuthorizationCode(
@@ -79,6 +95,12 @@ export async function exchangeAuthorizationCode(
     typeof (body as { expires_in?: unknown }).expires_in !== "number"
   ) {
     throw new Error("token endpoint returned an invalid response");
+  }
+  if (config.expectedNonce !== undefined) {
+    const idToken = (body as { id_token?: unknown }).id_token;
+    if (typeof idToken !== "string" || decodeJwtPayload(idToken).nonce !== config.expectedNonce) {
+      throw new Error("token endpoint returned an invalid nonce");
+    }
   }
 
   return {

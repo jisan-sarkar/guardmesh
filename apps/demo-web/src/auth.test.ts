@@ -14,6 +14,8 @@ describe("browser OIDC helpers", () => {
 
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
     expect(url.searchParams.get("code_challenge")).toBe(await createCodeChallenge(result.verifier));
+    expect(url.searchParams.get("state")).toBe(result.state);
+    expect(url.searchParams.get("nonce")).toBe(result.nonce);
   });
 
   it("keeps tokens in memory only", () => {
@@ -25,8 +27,9 @@ describe("browser OIDC helpers", () => {
   });
 
   it("exchanges an authorization code and calculates expiry", async () => {
+    const idTokenPayload = btoa(JSON.stringify({ nonce: "nonce-1" })).replaceAll("=", "");
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ access_token: "access-1", expires_in: 300 }), { status: 200 }),
+      new Response(JSON.stringify({ access_token: "access-1", expires_in: 300, id_token: `header.${idTokenPayload}.signature` }), { status: 200 }),
     );
 
     await expect(exchangeAuthorizationCode({
@@ -35,6 +38,7 @@ describe("browser OIDC helpers", () => {
       redirectUri: "http://localhost:5173/callback",
       code: "code-1",
       verifier: "verifier-1",
+      expectedNonce: "nonce-1",
       fetchImpl,
     })).resolves.toMatchObject({ accessToken: "access-1" });
     expect(fetchImpl).toHaveBeenCalledOnce();

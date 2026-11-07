@@ -20,10 +20,13 @@ export function App() {
   useEffect(() => {
     const callback = new URL(window.location.href);
     const code = callback.searchParams.get("code");
+    const returnedState = callback.searchParams.get("state");
     if (callback.pathname !== "/callback" || !code) return;
 
     const verifier = sessionStorage.getItem("guardmesh.pkce_verifier");
-    if (!verifier) {
+    const expectedState = sessionStorage.getItem("guardmesh.oidc_state");
+    const expectedNonce = sessionStorage.getItem("guardmesh.oidc_nonce");
+    if (!verifier || !expectedState || !expectedNonce || returnedState !== expectedState) {
       setMessage("Sign-in could not be completed: the PKCE verifier is missing");
       return;
     }
@@ -34,9 +37,12 @@ export function App() {
       redirectUri: oidcConfig.redirectUri,
       code,
       verifier,
+      expectedNonce,
     }).then((tokens) => {
       tokenStore.set(tokens);
       sessionStorage.removeItem("guardmesh.pkce_verifier");
+      sessionStorage.removeItem("guardmesh.oidc_state");
+      sessionStorage.removeItem("guardmesh.oidc_nonce");
       window.history.replaceState({}, "", "/");
       setMessage("Authenticated; access token is held in memory");
       void refreshOperatorData(tokens.accessToken);
@@ -44,8 +50,10 @@ export function App() {
   }, []);
 
   async function signIn() {
-    const { url, verifier } = await createAuthorizationUrl(oidcConfig);
+    const { url, verifier, state, nonce } = await createAuthorizationUrl(oidcConfig);
     sessionStorage.setItem("guardmesh.pkce_verifier", verifier);
+    sessionStorage.setItem("guardmesh.oidc_state", state);
+    sessionStorage.setItem("guardmesh.oidc_nonce", nonce);
     window.location.assign(url);
   }
 
