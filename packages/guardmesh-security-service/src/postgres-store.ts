@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect, type Transaction } from "kysely";
+import { Kysely, PostgresDialect, sql, type Transaction } from "kysely";
 import pg from "pg";
 
 import {
@@ -44,6 +44,7 @@ export class PostgresSecurityEventStore implements SecurityEventStore {
     evaluator: SecurityAlertEvaluator,
   ): Promise<Readonly<{ event: SecurityEvent; alert?: SecurityAlert }>> {
     return this.db.transaction().execute(async (transaction) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtext('guardmesh.security.alert-evaluator'))`.execute(transaction);
       const existing = await transaction
         .selectFrom("security_inbox")
         .select("event_id")
