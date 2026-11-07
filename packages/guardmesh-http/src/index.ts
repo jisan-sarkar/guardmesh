@@ -6,6 +6,23 @@ import {
 } from "@nestjs/common";
 import { getOrCreateCorrelationId } from "@guardmesh/observability";
 
+const defaultRequestBodyLimitBytes = 1_048_576;
+const maximumRequestBodyLimitBytes = 10 * 1_048_576;
+
+export function parseRequestBodyLimit(raw: string | undefined): number {
+  const value = raw === undefined || raw.trim() === ""
+    ? defaultRequestBodyLimitBytes
+    : Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1 || value > maximumRequestBodyLimitBytes) {
+    throw new Error(`REQUEST_BODY_LIMIT_BYTES must be an integer between 1 and ${maximumRequestBodyLimitBytes}`);
+  }
+  return value;
+}
+
+export function requestBodyLimitFromEnvironment(): number {
+  return parseRequestBodyLimit(process.env.REQUEST_BODY_LIMIT_BYTES);
+}
+
 type HttpResponse = Readonly<{
   status: (code: number) => HttpResponse;
   send: (body: unknown) => void;

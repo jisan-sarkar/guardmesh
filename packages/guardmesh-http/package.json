@@ -4,13 +4,14 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc --noEmit -p tsconfig.json" },
+  "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit -p tsconfig.json" },
   "dependencies": {
     "@guardmesh/observability": "workspace:*",
     "@nestjs/common": "^11.1.9"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
   }
 }

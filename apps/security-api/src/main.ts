@@ -5,14 +5,17 @@ import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 import { AppModule } from "./app.module.js";
-import { GuardMeshExceptionFilter } from "@guardmesh/http";
+import { GuardMeshExceptionFilter, requestBodyLimitFromEnvironment } from "@guardmesh/http";
 import { defaultMetrics, guardMeshMetrics, startTelemetry } from "@guardmesh/observability";
 import { SecurityService } from "@guardmesh/security-service";
 import { startSecurityWorkflow } from "./workflow.js";
 
 async function bootstrap(): Promise<void> {
   await startTelemetry("security-api");
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ bodyLimit: requestBodyLimitFromEnvironment() }),
+  );
   app.useGlobalFilters(new GuardMeshExceptionFilter());
   app.getHttpAdapter().getInstance().addHook("onResponse", async () => {
     defaultMetrics.increment(guardMeshMetrics.httpRequests);
