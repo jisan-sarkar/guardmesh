@@ -34,7 +34,7 @@ export async function startOrdersWorkflow(): Promise<void> {
       const event = parseStockReservationResultEvent(message);
       if (!repository.applyStockOutcomeOnce) throw new Error("orders repository lacks inbox support");
       await repository.applyStockOutcomeOnce(event.eventId, event);
-    }, { retryExchange: ordersStockTopology.exchange, retryRoutingKey: ordersStockTopology.routingKey, maxAttempts: 3 });
+    }, { retryExchange: "", retryRoutingKey: ordersStockTopology.queue, maxAttempts: 3 });
     defaultReadiness.markReady();
 
     const tick = async () => {

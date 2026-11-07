@@ -170,8 +170,9 @@ export async function consumeWithAck(
     } catch {
       const headers = raw.properties?.headers ?? {};
       const attempt = typeof headers["x-retry-count"] === "number" ? headers["x-retry-count"] : 0;
-      const publish = channel.publish;
-      const canRetry = retryOptions !== undefined && attempt < retryOptions.maxAttempts && publish !== undefined;
+      const publish = channel.publish?.bind(channel);
+      const canRetry =
+        retryOptions !== undefined && attempt < retryOptions.maxAttempts && publish !== undefined;
       if (canRetry) {
         const accepted = publish(
           retryOptions.retryExchange,

@@ -40,7 +40,7 @@ export async function startInventoryWorkflow(): Promise<void> {
         () => crypto.randomUUID(),
         () => new Date().toISOString(),
       );
-    }, { retryExchange: inventoryOrderTopology.exchange, retryRoutingKey: inventoryOrderTopology.routingKey, maxAttempts: 3 });
+    }, { retryExchange: "", retryRoutingKey: inventoryOrderTopology.queue, maxAttempts: 3 });
     defaultReadiness.markReady();
 
     const tick = async () => {

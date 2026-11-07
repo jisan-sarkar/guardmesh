@@ -10,7 +10,7 @@ export async function startSecurityWorkflow(security: SecurityService): Promise<
     const broker = await connectWorkflowBroker(brokerUrl, { topologies: [securityEventsTopology] });
     await consumeWithAck(broker.channel, "security.events", async (message) => {
       await security.ingest(message);
-    }, { retryExchange: securityEventsTopology.exchange, retryRoutingKey: securityEventsTopology.routingKey, maxAttempts: 3 });
+    }, { retryExchange: "", retryRoutingKey: securityEventsTopology.queue, maxAttempts: 3 });
     defaultReadiness.markReady();
   } catch (error) {
     console.error("security workflow is unavailable", error);

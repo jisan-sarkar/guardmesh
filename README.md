@@ -62,7 +62,10 @@ pnpm build
 pnpm policy:test
 pnpm compose:config
 pnpm audit --audit-level high
+scripts/runtime-smoke.sh
 ```
+
+`scripts/runtime-smoke.sh` expects a running local Compose stack and verifies API readiness, broker queues/permissions, and one synthetic outbox-to-reservation workflow. Override `BASE_URL`, `POSTGRES_CONTAINER`, and `RABBITMQ_CONTAINER` for an isolated Compose project.
 
 ## Local environment
 

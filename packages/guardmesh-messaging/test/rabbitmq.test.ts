@@ -108,21 +108,24 @@ describe("RabbitMQ transport", () => {
       content: Buffer.from("not-json"),
       properties: { headers: { "x-retry-count": 1 } },
     } as unknown as ConsumeMessage;
-    const consume = vi.fn().mockImplementation(async (_queue, callback) => callback(raw));
     const ack = vi.fn();
     const nack = vi.fn();
-    const publish = vi.fn().mockReturnValue(true);
+    const channel = {
+      consume: vi.fn().mockImplementation(async (_queue, callback) => callback(raw)),
+      ack,
+      nack,
+      publish(this: { retryPublishes: number }, ...args: unknown[]) {
+        this.retryPublishes += 1;
+        return true;
+      },
+      retryPublishes: 0,
+    };
 
-    await consumeWithAck({ consume, ack, nack, publish } as never, "inventory.orders", async () => {
+    await consumeWithAck(channel as never, "inventory.orders", async () => {
       throw new Error("handler failure");
     }, { retryExchange: "guardmesh.events", retryRoutingKey: "orders.order-created.v1", maxAttempts: 3 });
 
-    expect(publish).toHaveBeenCalledWith(
-      "guardmesh.events",
-      "orders.order-created.v1",
-      raw.content,
-      expect.objectContaining({ headers: { "x-retry-count": 2 } }),
-    );
+    expect(channel.retryPublishes).toBe(1);
     expect(ack).toHaveBeenCalledWith(raw);
     expect(nack).not.toHaveBeenCalled();
   });

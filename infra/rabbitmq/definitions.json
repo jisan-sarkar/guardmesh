@@ -6,9 +6,9 @@
     {"name": "security-service", "password": "security-change-me-local-only", "tags": ""}
   ],
   "permissions": [
-    {"user": "orders-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results(\\.failed)?)$", "write": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results(\\.failed)?)$", "read": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results)$"},
-    {"user": "inventory-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders(\\.failed)?)$", "write": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders(\\.failed)?)$", "read": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders)$"},
-    {"user": "security-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(security|dlx)|security\\.events(\\.failed)?)$", "write": "^(guardmesh\\.(security|dlx)|security\\.events(\\.failed)?)$", "read": "^(guardmesh\\.(security|dlx)|security\\.events)$"}
+    {"user": "orders-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results(\\.failed)?)$", "write": "^(amq\\.default|guardmesh\\.(events|security|dlx)|orders\\.stock-results(\\.failed)?)$", "read": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results)$"},
+    {"user": "inventory-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders(\\.failed)?)$", "write": "^(amq\\.default|guardmesh\\.(events|security|dlx)|inventory\\.orders(\\.failed)?)$", "read": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders)$"},
+    {"user": "security-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(security|dlx)|security\\.events(\\.failed)?)$", "write": "^(amq\\.default|guardmesh\\.(security|dlx)|security\\.events(\\.failed)?)$", "read": "^(guardmesh\\.(security|dlx)|security\\.events)$"}
   ],
   "topic_permissions": [
     {"user": "orders-service", "vhost": "guardmesh", "exchange": "guardmesh.events", "write": "^orders\\.order-created\\.v1$", "read": "^inventory\\.stock-reservation-result\\.v1$"},
