@@ -40,8 +40,9 @@ To enable the optional telemetry stack, set `OTEL_EXPORTER_OTLP_ENDPOINT=http://
 Operational checks are available through `/orders/health/live`, `/orders/health/ready`,
 `/inventory/health/live`, `/inventory/health/ready`, `/security/health/live`, and
 `/security/health/ready`. Each API also exposes an internal `/metrics` endpoint.
-Run `DATABASE_URL=... pnpm workflow:reconcile` to detect pending outboxes and
-inconsistent or stuck orders without mutating data.
+Run `RECONCILIATION_AGE_MINUTES=5 DATABASE_URL=... pnpm workflow:reconcile` to
+produce a read-only report of pending outboxes and inconsistent or stuck orders,
+including correlated event IDs, likely cause, and an approved recovery action.
 
 The restaurant workflow is only a replaceable demonstration domain. GuardMesh is not a restaurant, payment, or full POS product.
 
@@ -92,7 +93,7 @@ Backup/restore uses an explicit target for safety. Run `DATABASE_URL=... BACKUP_
 
 Generated OpenAPI JSON is opt-in for local contract inspection. Set `ENABLE_API_DOCS=true` before starting Compose, then use `/api/orders/docs/openapi.json`, `/api/inventory/docs/openapi.json`, or `/api/security/docs/openapi.json`. Documentation routes remain disabled in production and by default.
 
-For recovery and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
+For recovery, security evidence, and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/security/verification-matrix.md`](docs/security/verification-matrix.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
 
 ## Engineering principles
 
