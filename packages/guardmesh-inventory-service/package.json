@@ -15,6 +15,7 @@
     "@guardmesh/events": "workspace:*",
     "@guardmesh/inventory-domain": "workspace:*",
     "@guardmesh/messaging": "workspace:*",
+    "@guardmesh/observability": "workspace:*",
     "@guardmesh/policy": "workspace:*",
     "kysely": "^0.28.8",
     "pg": "^8.16.3",

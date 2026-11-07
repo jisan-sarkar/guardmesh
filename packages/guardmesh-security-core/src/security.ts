@@ -35,6 +35,7 @@ export type SecurityAlert = Readonly<{
   count: number;
   reason: string;
   acknowledged: boolean;
+  status: "OPEN" | "ACKNOWLEDGED";
 }>;
 
 export function sanitizeSecurityEvent(input: unknown): SecurityEvent {
@@ -80,7 +81,7 @@ export class InMemorySecurityEventStore implements SecurityEventStore {
   public async acknowledgeAlert(alertId: string): Promise<void> {
     const index = this.alerts.findIndex((alert) => alert.alertId === alertId);
     const alert = index >= 0 ? this.alerts[index] : undefined;
-    if (alert) this.alerts[index] = { ...alert, acknowledged: true };
+    if (alert) this.alerts[index] = { ...alert, acknowledged: true, status: "ACKNOWLEDGED" };
   }
 }
 
@@ -99,8 +100,22 @@ export class SecurityAlertEvaluator {
   ) {}
 
   public async evaluate(event: SecurityEvent): Promise<SecurityAlert | undefined> {
-    const events = await this.store.list();
-    const alerts = await this.store.listAlerts();
+    return this.evaluateUsing(event, this.store);
+  }
+
+  public async evaluateInTransaction(
+    event: SecurityEvent,
+    transactionalStore: SecurityEventStore,
+  ): Promise<SecurityAlert | undefined> {
+    return this.evaluateUsing(event, transactionalStore);
+  }
+
+  private async evaluateUsing(
+    event: SecurityEvent,
+    store: SecurityEventStore,
+  ): Promise<SecurityAlert | undefined> {
+    const events = await store.list();
+    const alerts = await store.listAlerts();
     const now = Date.parse(this.clock());
     const observedEvents = events.some((candidate) => candidate.eventId === event.eventId)
       ? events
@@ -117,13 +132,16 @@ export class SecurityAlertEvaluator {
         : undefined;
     if (!rule) return undefined;
 
-    const correlationKey = `${event.actorId ?? "unknown"}:${event.resourceType ?? "unknown"}`;
+    const correlationKey = rule === "REPEATED_POLICY_FAILURE"
+      ? `source:${event.metadata.sourceService ?? event.actorId ?? "unknown"}`
+      : `${event.actorId ?? "unknown"}:${event.resourceType ?? "unknown"}`;
     const count = recent.filter((candidate) => {
       if (rule === "REPEATED_AUTHORIZATION_DENIAL") {
         return candidate.type === "AUTHORIZATION_DECISION" && candidate.outcome === "DENY" &&
           `${candidate.actorId ?? "unknown"}:${candidate.resourceType ?? "unknown"}` === correlationKey;
       }
-      return candidate.type === "POLICY_FAILURE" && candidate.outcome === "FAILURE";
+      return candidate.type === "POLICY_FAILURE" && candidate.outcome === "FAILURE" &&
+        `source:${candidate.metadata.sourceService ?? candidate.actorId ?? "unknown"}` === correlationKey;
     }).length;
     const threshold = rule === "REPEATED_AUTHORIZATION_DENIAL"
       ? this.config.denialThreshold
@@ -148,8 +166,9 @@ export class SecurityAlertEvaluator {
         ? "authorization denials exceeded the configured threshold"
         : "policy failures exceeded the configured threshold",
       acknowledged: false,
+      status: "OPEN",
     };
-    await this.store.appendAlert(alert);
+    await store.appendAlert(alert);
     return alert;
   }
 }

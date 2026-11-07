@@ -30,8 +30,10 @@ describe("observability helpers", () => {
 
   it("starts unready and becomes ready explicitly", () => {
     const readiness = new ReadinessState();
+    expect(readiness.isReady()).toBe(false);
     expect(readiness.status("orders-api")).toEqual({ status: "starting", service: "orders-api" });
     readiness.markReady();
+    expect(readiness.isReady()).toBe(true);
     expect(readiness.status("orders-api")).toEqual({ status: "ok", service: "orders-api" });
   });
 });

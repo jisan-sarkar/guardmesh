@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@guardmesh/auth": "workspace:*",
+    "@guardmesh/http": "workspace:*",
     "@guardmesh/messaging": "workspace:*",
     "@guardmesh/security-core": "workspace:*",
     "@guardmesh/security-service": "workspace:*",

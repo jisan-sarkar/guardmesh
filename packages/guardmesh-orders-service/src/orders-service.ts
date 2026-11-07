@@ -7,13 +7,19 @@ import {
   type OrderItem,
   type OrderRepository,
 } from "@guardmesh/orders-domain";
-import type { PolicyEnforcementAdapter } from "@guardmesh/policy";
+import { PolicyDecisionError, type PolicyEnforcementAdapter } from "@guardmesh/policy";
 import { publishSecurityEvent } from "@guardmesh/messaging";
+import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 
 const createOrderInputSchema = z.object({
   requestFingerprint: z.string().min(1),
-  items: z.array(z.object({ sku: z.string().min(1), quantity: z.number().int().positive() })).min(1),
-});
+  items: z.array(z.object({ sku: z.string().min(1), quantity: z.number().int().positive() }).strict()).min(1).max(100)
+    .superRefine((items, context) => {
+      if (new Set(items.map((item) => item.sku)).size !== items.length) {
+        context.addIssue({ code: "custom", message: "duplicate SKU is not allowed" });
+      }
+    }),
+}).strict();
 
 export type OrdersActor = Readonly<{
   actorId: string;
@@ -37,6 +43,13 @@ export class OrderForbiddenError extends Error {
   }
 }
 
+export class OrderIdempotencyConflictError extends Error {
+  public constructor() {
+    super("idempotency key was reused with a different request");
+    this.name = "OrderIdempotencyConflictError";
+  }
+}
+
 export class OrdersService {
   public constructor(
     private readonly repository: OrderRepository,
@@ -54,17 +67,45 @@ export class OrdersService {
     );
     const targetOrderId = existing?.orderId ?? this.orderIdFactory();
 
-    const decision = await this.policy.authorize({
-      actorId: actor.actorId,
-      actorRoles: actor.roles,
-      actorLocationId: actor.locationId,
-      action: "order.create",
-      resourceType: "order",
-      resourceId: targetOrderId,
-      resourceLocationId: actor.locationId,
-    });
+    if (existing && JSON.stringify(existing.items) !== JSON.stringify(parsedInput.items)) {
+      throw new OrderIdempotencyConflictError();
+    }
+
+    let decision;
+    try {
+      decision = await this.policy.authorize({
+        actorId: actor.actorId,
+        actorRoles: actor.roles,
+        actorLocationId: actor.locationId,
+        action: "order.create",
+        resourceType: "order",
+        resourceId: targetOrderId,
+        resourceLocationId: actor.locationId,
+      });
+    } catch (error) {
+      if (error instanceof PolicyDecisionError) {
+        defaultMetrics.increment(guardMeshMetrics.policyFailures);
+        publishSecurityEvent({
+          version: 1,
+          eventId: this.eventIdFactory(),
+          type: "POLICY_FAILURE",
+          occurredAt: this.clock(),
+          correlationId: targetOrderId,
+          actorId: actor.actorId,
+          action: "order.create",
+          outcome: "FAILURE",
+          resourceType: "order",
+          resourceId: targetOrderId,
+          locationId: actor.locationId,
+          reason: "authorization policy unavailable",
+          metadata: { failureClass: "policy-decision-error", sourceService: "orders-api" },
+        });
+      }
+      throw error;
+    }
 
     if (!decision.allow) {
+      defaultMetrics.increment(guardMeshMetrics.authorizationDenied);
       publishSecurityEvent({
         version: 1,
         eventId: this.eventIdFactory(),
@@ -82,6 +123,8 @@ export class OrdersService {
       });
       throw new OrderForbiddenError(decision);
     }
+
+    defaultMetrics.increment(guardMeshMetrics.authorizationAllowed);
 
     if (existing) {
       return existing;
@@ -131,17 +174,41 @@ export class OrdersService {
       return undefined;
     }
 
-    const decision = await this.policy.authorize({
-      actorId: actor.actorId,
-      actorRoles: actor.roles,
-      actorLocationId: actor.locationId,
-      action: "order.read",
-      resourceType: "order",
-      resourceId: order.orderId,
-      resourceLocationId: order.locationId,
-    });
+    let decision;
+    try {
+      decision = await this.policy.authorize({
+        actorId: actor.actorId,
+        actorRoles: actor.roles,
+        actorLocationId: actor.locationId,
+        action: "order.read",
+        resourceType: "order",
+        resourceId: order.orderId,
+        resourceLocationId: order.locationId,
+      });
+    } catch (error) {
+      if (error instanceof PolicyDecisionError) {
+        defaultMetrics.increment(guardMeshMetrics.policyFailures);
+        publishSecurityEvent({
+          version: 1,
+          eventId: this.eventIdFactory(),
+          type: "POLICY_FAILURE",
+          occurredAt: this.clock(),
+          correlationId: order.orderId,
+          actorId: actor.actorId,
+          action: "order.read",
+          outcome: "FAILURE",
+          resourceType: "order",
+          resourceId: order.orderId,
+          locationId: actor.locationId,
+          reason: "authorization policy unavailable",
+          metadata: { failureClass: "policy-decision-error", sourceService: "orders-api" },
+        });
+      }
+      throw error;
+    }
 
     if (!decision.allow) {
+      defaultMetrics.increment(guardMeshMetrics.authorizationDenied);
       publishSecurityEvent({
         version: 1,
         eventId: this.eventIdFactory(),
@@ -159,6 +226,8 @@ export class OrdersService {
       });
       throw new OrderForbiddenError(decision);
     }
+
+    defaultMetrics.increment(guardMeshMetrics.authorizationAllowed);
 
     return order;
   }

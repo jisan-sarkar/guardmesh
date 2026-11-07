@@ -14,6 +14,7 @@ services:
       - ./packages/guardmesh-inventory-service/migrations/001_create_inventory.sql:/docker-entrypoint-initdb.d/20-inventory.sql:ro
       - ./packages/guardmesh-security-service/migrations/001_create_security.sql:/docker-entrypoint-initdb.d/30-security.sql:ro
       - ./infra/postgres/40_seed.sql:/docker-entrypoint-initdb.d/40-seed.sql:ro
+      - ./infra/postgres/50_grants.sql:/docker-entrypoint-initdb.d/50-grants.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -22,10 +23,15 @@ services:
 
   rabbitmq:
     image: rabbitmq:4-management-alpine
+    hostname: rabbitmq
+    command: ["sh", "-c", "rabbitmq-server & pid=$$!; until rabbitmq-diagnostics -q check_running; do sleep 1; done; rabbitmqctl import_definitions /etc/rabbitmq/definitions.json; wait $$pid"]
     ports: ["${RABBITMQ_PORT:-5672}:5672", "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"]
-    volumes: [guardmesh-rabbitmq:/var/lib/rabbitmq]
+    volumes:
+      - guardmesh-rabbitmq:/var/lib/rabbitmq
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -53,9 +59,9 @@ services:
       dockerfile: infra/docker/node-app.Dockerfile
     command: ["pnpm", "--filter", "@guardmesh/orders-api", "start"]
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${ORDERS_DATABASE_URL}
       OPA_POLICY_URL: ${OPA_POLICY_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_URL: ${ORDERS_RABBITMQ_URL}
       OIDC_ISSUER: ${OIDC_ISSUER}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE}
       OIDC_JWKS_URI: ${OIDC_JWKS_URI}
@@ -72,9 +78,9 @@ services:
       dockerfile: infra/docker/node-app.Dockerfile
     command: ["pnpm", "--filter", "@guardmesh/inventory-api", "start"]
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${INVENTORY_DATABASE_URL}
       OPA_POLICY_URL: ${OPA_POLICY_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_URL: ${INVENTORY_RABBITMQ_URL}
       OIDC_ISSUER: ${OIDC_ISSUER}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE}
       OIDC_JWKS_URI: ${OIDC_JWKS_URI}
@@ -91,12 +97,12 @@ services:
       dockerfile: infra/docker/node-app.Dockerfile
     command: ["pnpm", "--filter", "@guardmesh/security-api", "start"]
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${SECURITY_DATABASE_URL}
       OIDC_ISSUER: ${OIDC_ISSUER}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE}
       OIDC_JWKS_URI: ${OIDC_JWKS_URI}
       ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
-      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_URL: ${SECURITY_RABBITMQ_URL}
     depends_on:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}

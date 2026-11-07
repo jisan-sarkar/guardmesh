@@ -205,6 +205,9 @@ importers:
       '@guardmesh/events':
         specifier: workspace:*
         version: link:../../packages/guardmesh-events
+      '@guardmesh/http':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-http
       '@guardmesh/inventory-domain':
         specifier: workspace:*
         version: link:../../packages/guardmesh-inventory-domain
@@ -247,6 +250,9 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
+      zod:
+        specifier: ^4.1.12
+        version: 4.6.7
     devDependencies:
       '@types/amqplib':
         specifier: ^0.10.7
@@ -275,6 +281,9 @@ importers:
       '@guardmesh/events':
         specifier: workspace:*
         version: link:../../packages/guardmesh-events
+      '@guardmesh/http':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-http
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../../packages/guardmesh-messaging
@@ -317,6 +326,9 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
+      zod:
+        specifier: ^4.1.12
+        version: 4.6.7
     devDependencies:
       '@types/amqplib':
         specifier: ^0.10.7
@@ -342,6 +354,9 @@ importers:
       '@guardmesh/auth':
         specifier: workspace:*
         version: link:../../packages/guardmesh-auth
+      '@guardmesh/http':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-http
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../../packages/guardmesh-messaging
@@ -434,6 +449,22 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@7.3.7(@types/node@24.19.2)(lightningcss@1.33.0)(tsx@4.23.15))
 
+  packages/guardmesh-http:
+    dependencies:
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../guardmesh-observability
+      '@nestjs/common':
+        specifier: ^11.1.9
+        version: 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.19.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/guardmesh-inventory-domain:
     dependencies:
       zod:
@@ -464,6 +495,9 @@ importers:
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../guardmesh-messaging
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../guardmesh-observability
       '@guardmesh/policy':
         specifier: workspace:*
         version: link:../guardmesh-policy
@@ -549,6 +583,9 @@ importers:
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../guardmesh-messaging
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../guardmesh-observability
       '@guardmesh/orders-domain':
         specifier: workspace:*
         version: link:../guardmesh-orders-domain

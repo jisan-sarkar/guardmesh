@@ -1,0 +1,38 @@
+{
+  "vhosts": [{"name": "guardmesh"}],
+  "users": [
+    {"name": "orders-service", "password": "orders-change-me-local-only", "tags": ""},
+    {"name": "inventory-service", "password": "inventory-change-me-local-only", "tags": ""},
+    {"name": "security-service", "password": "security-change-me-local-only", "tags": ""}
+  ],
+  "permissions": [
+    {"user": "orders-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results(\\.failed)?)$", "write": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results(\\.failed)?)$", "read": "^(guardmesh\\.(events|security|dlx)|orders\\.stock-results)$"},
+    {"user": "inventory-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders(\\.failed)?)$", "write": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders(\\.failed)?)$", "read": "^(guardmesh\\.(events|security|dlx)|inventory\\.orders)$"},
+    {"user": "security-service", "vhost": "guardmesh", "configure": "^(guardmesh\\.(security|dlx)|security\\.events(\\.failed)?)$", "write": "^(guardmesh\\.(security|dlx)|security\\.events(\\.failed)?)$", "read": "^(guardmesh\\.(security|dlx)|security\\.events)$"}
+  ],
+  "topic_permissions": [
+    {"user": "orders-service", "vhost": "guardmesh", "exchange": "guardmesh.events", "write": "^orders\\.order-created\\.v1$", "read": "^inventory\\.stock-reservation-result\\.v1$"},
+    {"user": "orders-service", "vhost": "guardmesh", "exchange": "guardmesh.security", "write": "^security\\.event\\.v1$", "read": "^$"},
+    {"user": "inventory-service", "vhost": "guardmesh", "exchange": "guardmesh.events", "write": "^inventory\\.stock-reservation-result\\.v1$", "read": "^orders\\.order-created\\.v1$"},
+    {"user": "inventory-service", "vhost": "guardmesh", "exchange": "guardmesh.security", "write": "^security\\.event\\.v1$", "read": "^$"},
+    {"user": "security-service", "vhost": "guardmesh", "exchange": "guardmesh.security", "write": "^$", "read": "^security\\.event\\.v1$"}
+  ],
+  "exchanges": [
+    {"name": "guardmesh.events", "vhost": "guardmesh", "type": "topic", "durable": true},
+    {"name": "guardmesh.security", "vhost": "guardmesh", "type": "topic", "durable": true},
+    {"name": "guardmesh.dlx", "vhost": "guardmesh", "type": "topic", "durable": true}
+  ],
+  "queues": [
+    {"name": "inventory.orders", "vhost": "guardmesh", "durable": true, "arguments": {"x-dead-letter-exchange": "guardmesh.dlx", "x-dead-letter-routing-key": "inventory.orders.failed"}},
+    {"name": "inventory.orders.failed", "vhost": "guardmesh", "durable": true},
+    {"name": "orders.stock-results", "vhost": "guardmesh", "durable": true, "arguments": {"x-dead-letter-exchange": "guardmesh.dlx", "x-dead-letter-routing-key": "orders.stock-results.failed"}},
+    {"name": "orders.stock-results.failed", "vhost": "guardmesh", "durable": true},
+    {"name": "security.events", "vhost": "guardmesh", "durable": true, "arguments": {"x-dead-letter-exchange": "guardmesh.dlx", "x-dead-letter-routing-key": "security.events.failed"}},
+    {"name": "security.events.failed", "vhost": "guardmesh", "durable": true}
+  ],
+  "bindings": [
+    {"source": "guardmesh.events", "vhost": "guardmesh", "destination": "inventory.orders", "destination_type": "queue", "routing_key": "orders.order-created.v1"},
+    {"source": "guardmesh.events", "vhost": "guardmesh", "destination": "orders.stock-results", "destination_type": "queue", "routing_key": "inventory.stock-reservation-result.v1"},
+    {"source": "guardmesh.security", "vhost": "guardmesh", "destination": "security.events", "destination_type": "queue", "routing_key": "security.event.v1"}
+  ]
+}

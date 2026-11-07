@@ -15,6 +15,19 @@ export class SecurityOperatorRequiredError extends Error {
 
 export type Operator = Readonly<{ roles: string[] }>;
 
+export type SecurityPage<T> = Readonly<{
+  items: T[];
+  total: number;
+  nextOffset?: number;
+}>;
+
+type TransactionalSecurityStore = SecurityEventStore & {
+  appendAndEvaluate?: (
+    event: SecurityEvent,
+    evaluator: SecurityAlertEvaluator,
+  ) => Promise<Readonly<{ event: SecurityEvent; alert?: SecurityAlert }>>;
+};
+
 function requireOperator(operator: Operator): void {
   if (!operator.roles.includes("security-operator")) {
     throw new SecurityOperatorRequiredError();
@@ -29,6 +42,10 @@ export class SecurityService {
 
   public async ingest(input: unknown): Promise<Readonly<{ event: SecurityEvent; alert?: SecurityAlert }>> {
     const event = sanitizeSecurityEvent(input);
+    const transactionalStore = this.store as TransactionalSecurityStore;
+    if (transactionalStore.appendAndEvaluate) {
+      return transactionalStore.appendAndEvaluate(event, this.evaluator);
+    }
     await this.store.append(event);
     const alert = await this.evaluator.evaluate(event);
     return alert === undefined ? { event } : { event, alert };
@@ -39,9 +56,39 @@ export class SecurityService {
     return this.store.list();
   }
 
+  public async listEventsPage(
+    operator: Operator,
+    options: Readonly<{ limit: number; offset: number }>,
+  ): Promise<SecurityPage<SecurityEvent>> {
+    requireOperator(operator);
+    const events = await this.store.list();
+    const items = events.slice(options.offset, options.offset + options.limit);
+    return {
+      items,
+      total: events.length,
+      ...(options.offset + items.length < events.length ? { nextOffset: options.offset + items.length } : {}),
+    };
+  }
+
   public async listAlerts(operator: Operator): Promise<SecurityAlert[]> {
     requireOperator(operator);
     return this.store.listAlerts();
+  }
+
+  public async listAlertsPage(
+    operator: Operator,
+    options: Readonly<{ limit: number; offset: number; status?: SecurityAlert["status"] }>,
+  ): Promise<SecurityPage<SecurityAlert>> {
+    requireOperator(operator);
+    const alerts = (await this.store.listAlerts()).filter(
+      (alert) => options.status === undefined || alert.status === options.status,
+    );
+    const items = alerts.slice(options.offset, options.offset + options.limit);
+    return {
+      items,
+      total: alerts.length,
+      ...(options.offset + items.length < alerts.length ? { nextOffset: options.offset + items.length } : {}),
+    };
   }
 
   public async acknowledge(operator: Operator, alertId: string): Promise<void> {

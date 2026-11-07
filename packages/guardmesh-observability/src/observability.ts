@@ -41,11 +41,16 @@ export class ReadinessState {
   public status(service: string): Readonly<{ status: "ok" | "starting"; service: string }> {
     return { status: this.ready ? "ok" : "starting", service };
   }
+
+  public isReady(): boolean {
+    return this.ready;
+  }
 }
 
 export const defaultReadiness = new ReadinessState();
 
 export type GuardMeshMetrics = Readonly<{
+  httpRequests: string;
   authAccepted: string;
   authRejected: string;
   authorizationAllowed: string;
@@ -56,6 +61,7 @@ export type GuardMeshMetrics = Readonly<{
 }>;
 
 export const guardMeshMetrics: GuardMeshMetrics = {
+  httpRequests: "guardmesh_http_requests_total",
   authAccepted: "guardmesh_auth_accepted_total",
   authRejected: "guardmesh_auth_rejected_total",
   authorizationAllowed: "guardmesh_authorization_allowed_total",

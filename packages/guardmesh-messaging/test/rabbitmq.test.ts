@@ -59,6 +59,22 @@ describe("RabbitMQ transport", () => {
     expect(waitForConfirms).toHaveBeenCalledOnce();
   });
 
+  it("fails confirmed publication when RabbitMQ returns the mandatory message", async () => {
+    const listeners = new Map<string, (message: { properties?: { messageId?: string } }) => void>();
+    const publish = vi.fn().mockImplementation(() => {
+      listeners.get("return")?.({ properties: { messageId: "event-1" } });
+      return true;
+    });
+    const publisher = new RabbitMqPublisher({
+      publish,
+      waitForConfirms: vi.fn().mockResolvedValue(undefined),
+      on: (event, listener) => listeners.set(event, listener),
+      removeListener: (event) => listeners.delete(event),
+    }, "guardmesh.events", "missing.route");
+
+    await expect(publisher.publishConfirmed({ eventId: "event-1" })).rejects.toThrow("unroutable");
+  });
+
   it("acknowledges successfully handled messages", async () => {
     const raw = { content: Buffer.from('{"eventId":"event-1"}') } as ConsumeMessage;
     const consume = vi.fn().mockImplementation(async (_queue, callback) => callback(raw));
@@ -85,5 +101,29 @@ describe("RabbitMQ transport", () => {
 
     expect(nack).toHaveBeenCalledWith(raw, false, false);
     expect(ack).not.toHaveBeenCalled();
+  });
+
+  it("retries a failed message a bounded number of times before DLQ", async () => {
+    const raw = {
+      content: Buffer.from("not-json"),
+      properties: { headers: { "x-retry-count": 1 } },
+    } as unknown as ConsumeMessage;
+    const consume = vi.fn().mockImplementation(async (_queue, callback) => callback(raw));
+    const ack = vi.fn();
+    const nack = vi.fn();
+    const publish = vi.fn().mockReturnValue(true);
+
+    await consumeWithAck({ consume, ack, nack, publish } as never, "inventory.orders", async () => {
+      throw new Error("handler failure");
+    }, { retryExchange: "guardmesh.events", retryRoutingKey: "orders.order-created.v1", maxAttempts: 3 });
+
+    expect(publish).toHaveBeenCalledWith(
+      "guardmesh.events",
+      "orders.order-created.v1",
+      raw.content,
+      expect.objectContaining({ headers: { "x-retry-count": 2 } }),
+    );
+    expect(ack).toHaveBeenCalledWith(raw);
+    expect(nack).not.toHaveBeenCalled();
   });
 });

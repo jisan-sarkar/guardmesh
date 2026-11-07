@@ -29,15 +29,28 @@ export const securityEventsTopology: QueueTopology = {
   deadLetterRoutingKey: "security.events.failed",
 };
 
-export async function connectWorkflowBroker(url: string): Promise<{
+export type BrokerTopologyOptions = Readonly<{
+  topologies?: readonly QueueTopology[];
+  exchanges?: readonly string[];
+}>;
+
+export async function connectWorkflowBroker(
+  url: string,
+  options: BrokerTopologyOptions = {},
+): Promise<{
   connection: amqp.ChannelModel;
   channel: amqp.ConfirmChannel;
 }> {
   const connection = await amqp.connect(url);
   const channel = await connection.createConfirmChannel();
-  await configureTopology(channel, inventoryOrderTopology);
-  await configureTopology(channel, ordersStockTopology);
-  await configureTopology(channel, securityEventsTopology);
+  const topologies = options.topologies ?? [inventoryOrderTopology, ordersStockTopology, securityEventsTopology];
+  const exchanges = new Set(options.exchanges ?? []);
+  for (const topology of topologies) {
+    await configureTopology(channel, topology);
+  }
+  for (const exchange of exchanges) {
+    await channel.assertExchange(exchange, "topic", { durable: true });
+  }
   return { connection, channel };
 }
 
@@ -71,7 +84,11 @@ export async function configureTopology(channel: Channel, topology: QueueTopolog
 
 export class RabbitMqPublisher {
   public constructor(
-    private readonly channel: Pick<Channel, "publish"> & { waitForConfirms?: () => Promise<void> },
+    private readonly channel: Pick<Channel, "publish"> & {
+      waitForConfirms?: () => Promise<void>;
+      on?: (event: string, listener: (message: { properties?: { messageId?: string } }) => void) => void;
+      removeListener?: (event: string, listener: (message: { properties?: { messageId?: string } }) => void) => void;
+    },
     private readonly exchange: string,
     private readonly routingKey: string,
   ) {}
@@ -99,9 +116,21 @@ export class RabbitMqPublisher {
   }
 
   public async publishConfirmed(event: Readonly<Record<string, unknown>>): Promise<void> {
+    const channel = this.channel;
+    const eventId = typeof event.eventId === "string" ? event.eventId : undefined;
+    let returned = false;
+    const onReturn = (message: { properties?: { messageId?: string } }) => {
+      if (eventId === undefined || message.properties?.messageId === eventId) returned = true;
+    };
+    channel.on?.("return", onReturn);
     this.publish(event);
-    const waitForConfirms = this.channel.waitForConfirms;
-    if (waitForConfirms) await waitForConfirms.call(this.channel);
+    try {
+      const waitForConfirms = this.channel.waitForConfirms;
+      if (waitForConfirms) await waitForConfirms.call(this.channel);
+      if (returned) throw new Error("broker returned an unroutable mandatory message");
+    } finally {
+      channel.removeListener?.("return", onReturn);
+    }
   }
 }
 
@@ -119,10 +148,17 @@ export function publishSecurityEvent(event: Readonly<Record<string, unknown>>): 
 
 export type MessageHandler = (message: unknown, raw: ConsumeMessage) => Promise<void>;
 
+export type ConsumeRetryOptions = Readonly<{
+  retryExchange: string;
+  retryRoutingKey: string;
+  maxAttempts: number;
+}>;
+
 export async function consumeWithAck(
-  channel: Pick<Channel, "consume" | "ack" | "nack">,
+  channel: Pick<Channel, "consume" | "ack" | "nack"> & Partial<Pick<Channel, "publish">>,
   queue: string,
   handler: MessageHandler,
+  retryOptions?: ConsumeRetryOptions,
 ): Promise<void> {
   await channel.consume(queue, async (raw) => {
     if (!raw) return;
@@ -132,6 +168,26 @@ export async function consumeWithAck(
       await handler(message, raw);
       channel.ack(raw);
     } catch {
+      const headers = raw.properties?.headers ?? {};
+      const attempt = typeof headers["x-retry-count"] === "number" ? headers["x-retry-count"] : 0;
+      const publish = channel.publish;
+      const canRetry = retryOptions !== undefined && attempt < retryOptions.maxAttempts && publish !== undefined;
+      if (canRetry) {
+        const accepted = publish(
+          retryOptions.retryExchange,
+          retryOptions.retryRoutingKey,
+          raw.content,
+          {
+            persistent: true,
+            contentType: raw.properties?.contentType ?? "application/json",
+            headers: { ...headers, "x-retry-count": attempt + 1 },
+          },
+        );
+        if (accepted) {
+          channel.ack(raw);
+          return;
+        }
+      }
       channel.nack(raw, false, false);
     }
   });

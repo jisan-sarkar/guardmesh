@@ -25,7 +25,7 @@ const directoryToken = "ACTOR_DIRECTORY";
           store,
           () => crypto.randomUUID(),
           () => new Date().toISOString(),
-          { denialThreshold: 5, policyFailureThreshold: 3, windowMs: 60_000 },
+          { denialThreshold: 10, policyFailureThreshold: 3, windowMs: 300_000 },
         );
         return new SecurityService(store, evaluator);
       },

@@ -8,15 +8,17 @@ import {
 } from "@guardmesh/inventory-domain";
 import type { AuthorizationDecision } from "@guardmesh/contracts";
 import type { PolicyEnforcementAdapter } from "@guardmesh/policy";
+import { PolicyDecisionError } from "@guardmesh/policy";
 import type { InventoryStore } from "./store.js";
 import { publishSecurityEvent } from "@guardmesh/messaging";
+import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 import { z } from "zod";
 
 const stockAdjustmentSchema = z.object({
   sku: z.string().min(1),
   locationId: z.string().min(1),
   delta: z.number().int().refine((value) => value !== 0, "stock adjustment delta must be non-zero"),
-});
+}).strict();
 
 export type EventIdFactory = () => string;
 export type Clock = () => string;
@@ -43,16 +45,40 @@ export class InventoryService {
   ) {}
 
   public async getItems(actor: InventoryActor): Promise<InventoryState["items"]> {
-    const decision = await this.policy.authorize({
-      actorId: actor.actorId,
-      actorRoles: actor.roles,
-      actorLocationId: actor.locationId,
-      action: "inventory.read",
-      resourceType: "inventory",
-      resourceId: actor.locationId,
-      resourceLocationId: actor.locationId,
-    });
+    let decision;
+    try {
+      decision = await this.policy.authorize({
+        actorId: actor.actorId,
+        actorRoles: actor.roles,
+        actorLocationId: actor.locationId,
+        action: "inventory.read",
+        resourceType: "inventory",
+        resourceId: actor.locationId,
+        resourceLocationId: actor.locationId,
+      });
+    } catch (error) {
+      if (error instanceof PolicyDecisionError) {
+        defaultMetrics.increment(guardMeshMetrics.policyFailures);
+        publishSecurityEvent({
+          version: 1,
+          eventId: this.eventIdFactory(),
+          type: "POLICY_FAILURE",
+          occurredAt: this.clock(),
+          correlationId: actor.locationId,
+          actorId: actor.actorId,
+          action: "inventory.read",
+          outcome: "FAILURE",
+          resourceType: "inventory",
+          resourceId: actor.locationId,
+          locationId: actor.locationId,
+          reason: "authorization policy unavailable",
+          metadata: { failureClass: "policy-decision-error", sourceService: "inventory-api" },
+        });
+      }
+      throw error;
+    }
     if (!decision.allow) {
+      defaultMetrics.increment(guardMeshMetrics.authorizationDenied);
       publishSecurityEvent({
         version: 1,
         eventId: this.eventIdFactory(),
@@ -71,6 +97,8 @@ export class InventoryService {
       throw new InventoryForbiddenError(decision);
     }
 
+    defaultMetrics.increment(guardMeshMetrics.authorizationAllowed);
+
     return this.store.list(actor.locationId);
   }
 
@@ -88,16 +116,40 @@ export class InventoryService {
     const item = items[adjustment.sku];
     if (!item) throw new Error("inventory item not found");
 
-    const decision = await this.policy.authorize({
-      actorId: actor.actorId,
-      actorRoles: actor.roles,
-      actorLocationId: actor.locationId,
-      action: "inventory.adjust",
-      resourceType: "inventory",
-      resourceId: adjustment.sku,
-      resourceLocationId: item.locationId,
-    });
+    let decision;
+    try {
+      decision = await this.policy.authorize({
+        actorId: actor.actorId,
+        actorRoles: actor.roles,
+        actorLocationId: actor.locationId,
+        action: "inventory.adjust",
+        resourceType: "inventory",
+        resourceId: adjustment.sku,
+        resourceLocationId: item.locationId,
+      });
+    } catch (error) {
+      if (error instanceof PolicyDecisionError) {
+        defaultMetrics.increment(guardMeshMetrics.policyFailures);
+        publishSecurityEvent({
+          version: 1,
+          eventId: this.eventIdFactory(),
+          type: "POLICY_FAILURE",
+          occurredAt: this.clock(),
+          correlationId: adjustment.sku,
+          actorId: actor.actorId,
+          action: "inventory.adjust",
+          outcome: "FAILURE",
+          resourceType: "inventory",
+          resourceId: adjustment.sku,
+          locationId: actor.locationId,
+          reason: "authorization policy unavailable",
+          metadata: { failureClass: "policy-decision-error", sourceService: "inventory-api" },
+        });
+      }
+      throw error;
+    }
     if (!decision.allow) {
+      defaultMetrics.increment(guardMeshMetrics.authorizationDenied);
       publishSecurityEvent({
         version: 1,
         eventId: this.eventIdFactory(),
@@ -115,6 +167,8 @@ export class InventoryService {
       });
       throw new InventoryForbiddenError(decision);
     }
+
+    defaultMetrics.increment(guardMeshMetrics.authorizationAllowed);
 
     const result = await this.store.adjust(adjustment.sku, adjustment.locationId, adjustment.delta);
     publishSecurityEvent({

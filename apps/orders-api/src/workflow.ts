@@ -1,5 +1,5 @@
 import { parseStockReservationResultEvent } from "@guardmesh/events";
-import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
+import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, ordersStockTopology, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
 import { PostgresOutboxRelay } from "@guardmesh/outbox";
 import { defaultReadiness } from "@guardmesh/observability";
 import pg from "pg";
@@ -13,22 +13,8 @@ export async function startOrdersWorkflow(): Promise<void> {
 
   try {
     const pool = new pg.Pool({ connectionString: databaseUrl });
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS orders_outbox (
-        event_id TEXT PRIMARY KEY,
-        event_type TEXT NOT NULL,
-        payload_json JSONB NOT NULL,
-        attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
-        published_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS orders_inbox (
-        event_id TEXT PRIMARY KEY,
-        received_at TIMESTAMPTZ NOT NULL
-      );
-    `);
     const repository = new PostgresOrderRepository(createOrdersDatabase(databaseUrl));
-    const broker = await connectWorkflowBroker(brokerUrl);
+    const broker = await connectWorkflowBroker(brokerUrl, { topologies: [ordersStockTopology], exchanges: [securityExchange] });
     configureSecurityEventPublisher((event) => {
       new RabbitMqPublisher(broker.channel, securityExchange, "security.event.v1").publish(event);
     });
@@ -44,7 +30,7 @@ export async function startOrdersWorkflow(): Promise<void> {
       const event = parseStockReservationResultEvent(message);
       if (!repository.applyStockOutcomeOnce) throw new Error("orders repository lacks inbox support");
       await repository.applyStockOutcomeOnce(event.eventId, event);
-    });
+    }, { retryExchange: ordersStockTopology.exchange, retryRoutingKey: ordersStockTopology.routingKey, maxAttempts: 3 });
     defaultReadiness.markReady();
 
     const tick = async () => {

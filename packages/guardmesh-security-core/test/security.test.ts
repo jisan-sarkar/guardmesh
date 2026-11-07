@@ -46,6 +46,7 @@ describe("security events and alerts", () => {
       rule: "REPEATED_AUTHORIZATION_DENIAL",
       count: 3,
       acknowledged: false,
+      status: "OPEN",
     });
     await expect(evaluator.evaluate(sanitizeSecurityEvent({ ...denial, eventId: "event-4" }))).resolves.toMatchObject({
       alertId: "alert-1",

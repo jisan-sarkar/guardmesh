@@ -1,4 +1,4 @@
-import { connectWorkflowBroker, consumeWithAck } from "@guardmesh/messaging";
+import { connectWorkflowBroker, consumeWithAck, securityEventsTopology } from "@guardmesh/messaging";
 import { SecurityService } from "@guardmesh/security-service";
 import { defaultReadiness } from "@guardmesh/observability";
 
@@ -7,10 +7,10 @@ export async function startSecurityWorkflow(security: SecurityService): Promise<
   if (!brokerUrl) return;
 
   try {
-    const broker = await connectWorkflowBroker(brokerUrl);
+    const broker = await connectWorkflowBroker(brokerUrl, { topologies: [securityEventsTopology] });
     await consumeWithAck(broker.channel, "security.events", async (message) => {
       await security.ingest(message);
-    });
+    }, { retryExchange: securityEventsTopology.exchange, retryRoutingKey: securityEventsTopology.routingKey, maxAttempts: 3 });
     defaultReadiness.markReady();
   } catch (error) {
     console.error("security workflow is unavailable", error);

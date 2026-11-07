@@ -1,0 +1,16 @@
+{
+  "name": "@guardmesh/http",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit -p tsconfig.json" },
+  "dependencies": {
+    "@guardmesh/observability": "workspace:*",
+    "@nestjs/common": "^11.1.9"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}

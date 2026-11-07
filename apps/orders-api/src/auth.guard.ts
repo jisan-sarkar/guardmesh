@@ -7,6 +7,7 @@ import {
 import type { FastifyRequest } from "fastify";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
+import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 
 import type { ActorDirectory } from "./actor-directory.js";
 
@@ -29,6 +30,7 @@ export class AccessTokenGuard implements CanActivate {
     const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
 
     if (!token) {
+      defaultMetrics.increment(guardMeshMetrics.authRejected);
       throw new UnauthorizedException();
     }
 
@@ -40,8 +42,10 @@ export class AccessTokenGuard implements CanActivate {
       }
 
       request.actor = actor;
+      defaultMetrics.increment(guardMeshMetrics.authAccepted);
       return true;
     } catch {
+      defaultMetrics.increment(guardMeshMetrics.authRejected);
       throw new UnauthorizedException();
     }
   }

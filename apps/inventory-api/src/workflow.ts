@@ -1,4 +1,4 @@
-import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
+import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, inventoryOrderTopology, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
 import { PostgresOutboxRelay } from "@guardmesh/outbox";
 import { defaultReadiness } from "@guardmesh/observability";
 import pg from "pg";
@@ -15,23 +15,8 @@ export async function startInventoryWorkflow(): Promise<void> {
 
   try {
     const pool = new pg.Pool({ connectionString: databaseUrl });
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS inventory_inbox (
-        event_id TEXT PRIMARY KEY,
-        result_event_json JSONB NOT NULL,
-        processed_at TIMESTAMPTZ NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS inventory_outbox (
-        event_id TEXT PRIMARY KEY,
-        event_type TEXT NOT NULL,
-        payload_json JSONB NOT NULL,
-        attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
-        published_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ NOT NULL
-      );
-    `);
     const store = new PostgresInventoryStore(createInventoryDatabase(databaseUrl));
-    const broker = await connectWorkflowBroker(brokerUrl);
+    const broker = await connectWorkflowBroker(brokerUrl, { topologies: [inventoryOrderTopology], exchanges: [securityExchange] });
     configureSecurityEventPublisher((event) => {
       new RabbitMqPublisher(broker.channel, securityExchange, "security.event.v1").publish(event);
     });
@@ -49,7 +34,7 @@ export async function startInventoryWorkflow(): Promise<void> {
         () => crypto.randomUUID(),
         () => new Date().toISOString(),
       );
-    });
+    }, { retryExchange: inventoryOrderTopology.exchange, retryRoutingKey: inventoryOrderTopology.routingKey, maxAttempts: 3 });
     defaultReadiness.markReady();
 
     const tick = async () => {

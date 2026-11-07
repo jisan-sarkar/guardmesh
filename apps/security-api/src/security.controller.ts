@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 
 import { SecurityService } from "@guardmesh/security-service";
 import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
@@ -17,14 +17,26 @@ export class SecurityController {
 
   @Get("events")
   @UseGuards(SecurityOperatorGuard)
-  public events(@Req() request: SecurityRequest) {
-    return this.security.listEvents(request.actor!);
+  public events(@Req() request: SecurityRequest, @Query("limit") limit?: string, @Query("offset") offset?: string) {
+    return this.security.listEventsPage(request.actor!, parsePage(limit, offset));
   }
 
   @Get("alerts")
   @UseGuards(SecurityOperatorGuard)
-  public alerts(@Req() request: SecurityRequest) {
-    return this.security.listAlerts(request.actor!);
+  public alerts(
+    @Req() request: SecurityRequest,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+    @Query("status") status?: string,
+  ) {
+    if (status !== undefined && status !== "OPEN" && status !== "ACKNOWLEDGED") {
+      throw new BadRequestException("invalid alert status");
+    }
+    const page = parsePage(limit, offset);
+    return this.security.listAlertsPage(
+      request.actor!,
+      status === undefined ? page : { ...page, status: status as "OPEN" | "ACKNOWLEDGED" },
+    );
   }
 
   @Post("alerts/:alertId/acknowledge")
@@ -32,6 +44,15 @@ export class SecurityController {
   public acknowledge(@Req() request: SecurityRequest, @Param("alertId") alertId: string) {
     return this.security.acknowledge(request.actor!, alertId);
   }
+}
+
+function parsePage(limitInput?: string, offsetInput?: string): { limit: number; offset: number } {
+  const limit = limitInput === undefined ? 50 : Number(limitInput);
+  const offset = offsetInput === undefined ? 0 : Number(offsetInput);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isInteger(offset) || offset < 0) {
+    throw new BadRequestException("invalid pagination");
+  }
+  return { limit, offset };
 }
 
 @Controller("security/health")
@@ -42,8 +63,10 @@ export class HealthController {
   }
 
   @Get("ready")
-  public ready() {
-    return defaultReadiness.status("security-api");
+  public ready(@Res({ passthrough: true }) response: { statusCode: number }) {
+    const status = defaultReadiness.status("security-api");
+    if (!defaultReadiness.isReady()) response.statusCode = 503;
+    return status;
   }
 
 }

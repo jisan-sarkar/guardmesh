@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
 import type { SecurityActorDirectory, SecurityActor } from "./actor-directory.js";
+import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 
 type TokenVerifier = (token: string) => Promise<VerifiedAccessToken>;
 export type SecurityRequest = FastifyRequest & { actor?: SecurityActor };
@@ -18,14 +19,19 @@ export class SecurityAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<SecurityRequest>();
     const header = request.headers.authorization;
     const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
-    if (!token) throw new UnauthorizedException();
+    if (!token) {
+      defaultMetrics.increment(guardMeshMetrics.authRejected);
+      throw new UnauthorizedException();
+    }
     try {
       const verified = await this.verifyToken(token);
       const actor = this.directory.find(verified.subject);
       if (!actor) throw new UnauthorizedException();
       request.actor = actor;
+      defaultMetrics.increment(guardMeshMetrics.authAccepted);
       return true;
     } catch {
+      defaultMetrics.increment(guardMeshMetrics.authRejected);
       throw new UnauthorizedException();
     }
   }

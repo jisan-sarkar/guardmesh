@@ -1,15 +1,21 @@
 import {
   Body,
+  BadRequestException,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Post,
   Req,
-  ForbiddenException,
+  Res,
+  ServiceUnavailableException,
   UseGuards,
 } from "@nestjs/common";
 
 import { InventoryService } from "@guardmesh/inventory-service";
+import { InventoryForbiddenError } from "@guardmesh/inventory-service";
+import { PolicyDecisionError } from "@guardmesh/policy";
+import { ZodError } from "zod";
 import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
 
 import { AccessTokenGuard, InternalCatalogScopeGuard, type AuthenticatedRequest } from "./auth.guard.js";
@@ -21,7 +27,7 @@ export class InventoryController {
 
   @Get()
   public list(@Req() request: AuthenticatedRequest) {
-    return this.inventory.getItems(request.actor!);
+    return this.handle(() => this.inventory.getItems(request.actor!));
   }
 
   @Post(":sku/adjust")
@@ -30,7 +36,18 @@ export class InventoryController {
     @Param("sku") sku: string,
     @Body() body: { locationId: string; delta: number },
   ) {
-    return this.inventory.adjustStock(request.actor!, { sku, ...body });
+    return this.handle(() => this.inventory.adjustStock(request.actor!, { sku, ...body }));
+  }
+
+  private async handle<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof InventoryForbiddenError) throw new ForbiddenException("access denied");
+      if (error instanceof PolicyDecisionError) throw new ServiceUnavailableException("authorization policy unavailable");
+      if (error instanceof ZodError) throw new BadRequestException("invalid request");
+      throw error;
+    }
   }
 }
 
@@ -54,8 +71,10 @@ export class HealthController {
   }
 
   @Get("ready")
-  public ready() {
-    return defaultReadiness.status("inventory-api");
+  public ready(@Res({ passthrough: true }) response: { statusCode: number }) {
+    const status = defaultReadiness.status("inventory-api");
+    if (!defaultReadiness.isReady()) response.statusCode = 503;
+    return status;
   }
 
 }
