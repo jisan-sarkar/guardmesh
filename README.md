@@ -55,7 +55,14 @@ Until those steps are complete, there are no executable setup or test commands t
 
 ## Documentation
 
-The master project document is the source of truth for scope, architecture, requirements, decisions, tests, risks, and delivery governance. The README will be expanded with verified prerequisites, ports, environment setup, first-run steps, and test commands as the implementation makes them real.
+The master project document is the source of truth for scope, architecture, requirements, decisions, tests, risks, and delivery governance. The [development plan](GuardMesh_Development_Plan.md) tracks the approved implementation sequence.
+
+- [Master specification](GuardMesh_Master_Project_Document.md)
+- [Development plan](GuardMesh_Development_Plan.md)
+
+The README will be expanded with verified prerequisites, ports, environment setup, first-run steps, and test commands as the implementation makes them real.
+
+`dev` is the integration branch. `main` holds reviewed release baselines.
 
 ## License
 
