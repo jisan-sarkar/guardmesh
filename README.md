@@ -6,9 +6,9 @@ It demonstrates how to combine standard identity, service-side authorization, re
 
 ## Status
 
-**Design specification — implementation has not started.**
+**Implementation in progress — Phase 0 documentation and governance alignment.**
 
-The repository currently contains the documentation baseline only. Planned behavior, architecture, requirements, and release boundaries are defined in the master project document. Features are not considered implemented, verified, measured, or production-ready until code and repeatable evidence exist.
+The repository contains the workspace foundation and initial shared authorization contracts. The detailed project specification and development plan are maintained outside the public repository. Features are not considered implemented, verified, measured, or production-ready until code and repeatable evidence exist.
 
 ## Planned architecture
 
@@ -38,7 +38,7 @@ The restaurant workflow is only a replaceable demonstration domain. GuardMesh is
 
 ## Current development phase
 
-The project is in the requirements and design review phase. The next approved implementation step is the M0 compatibility and contract work, followed by a secure vertical slice.
+The project is implementing the approved plan one module at a time. Phase 0 restores the project documents; the next development step is the secure Orders vertical slice.
 
 Until those steps are complete, there are no executable setup or test commands to promise.
 
@@ -54,11 +54,6 @@ Until those steps are complete, there are no executable setup or test commands t
 - Keep the system small enough to understand, test, and operate locally.
 
 ## Documentation
-
-The master project document is the source of truth for scope, architecture, requirements, decisions, tests, risks, and delivery governance. The [development plan](GuardMesh_Development_Plan.md) tracks the approved implementation sequence.
-
-- [Master specification](GuardMesh_Master_Project_Document.md)
-- [Development plan](GuardMesh_Development_Plan.md)
 
 The README will be expanded with verified prerequisites, ports, environment setup, first-run steps, and test commands as the implementation makes them real.
 
