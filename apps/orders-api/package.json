@@ -20,7 +20,7 @@
     "@guardmesh/orders-service": "workspace:*",
     "@guardmesh/outbox": "workspace:*",
     "@guardmesh/policy": "workspace:*",
-    "@nestjs/common": "^11.1.9",
+    "@nestjs/common": "^12.3.3",
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-fastify": "^11.1.9",
     "@nestjs/swagger": "^11.4.8",
