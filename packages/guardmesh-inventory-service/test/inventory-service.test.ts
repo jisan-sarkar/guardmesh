@@ -26,6 +26,17 @@ describe("inventory service", () => {
     expect(service.getItems({ ...actor, locationId: "loc-b" })).resolves.toEqual({});
   });
 
+  it("requires policy approval for inventory reads", async () => {
+    const { authorize, service } = createService({
+      allow: false,
+      reason: "role cannot read inventory",
+      policyVersion: "inventory-v1",
+    });
+
+    await expect(service.getItems(actor)).rejects.toBeInstanceOf(InventoryForbiddenError);
+    expect(authorize).toHaveBeenCalledWith(expect.objectContaining({ action: "inventory.read" }));
+  });
+
   it("requires policy approval for stock adjustment", async () => {
     const { authorize, service } = createService();
 
@@ -36,7 +47,9 @@ describe("inventory service", () => {
   });
 
   it("rejects denied adjustments without changing stock", async () => {
-    const { service } = createService({ allow: false, reason: "cashier cannot adjust", policyVersion: "inventory-v1" });
+    const { authorize, service } = createService({ allow: false, reason: "cashier cannot adjust", policyVersion: "inventory-v1" });
+    authorize.mockResolvedValueOnce({ allow: false, reason: "cashier cannot adjust", policyVersion: "inventory-v1" });
+    authorize.mockResolvedValueOnce(allow);
 
     await expect(service.adjustStock(actor, { sku: "sku-1", locationId: "loc-a", delta: 2 })).rejects.toBeInstanceOf(
       InventoryForbiddenError,

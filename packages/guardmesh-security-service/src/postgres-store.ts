@@ -11,12 +11,12 @@ import {
 type SecurityDatabase = {
   security_events: {
     event_id: string;
-    event_json: string;
+    event_json: unknown;
     occurred_at: string;
   };
   security_alerts: {
     alert_id: string;
-    alert_json: string;
+    alert_json: unknown;
     acknowledged: boolean;
     created_at: string;
   };
@@ -45,7 +45,9 @@ export class PostgresSecurityEventStore implements SecurityEventStore {
       .select("event_json")
       .orderBy("occurred_at", "asc")
       .execute();
-    return rows.map((row) => securityEventSchema.parse(JSON.parse(row.event_json)));
+    return rows.map((row) => securityEventSchema.parse(
+      typeof row.event_json === "string" ? JSON.parse(row.event_json) : row.event_json,
+    ));
   }
 
   public async appendAlert(alert: SecurityAlert): Promise<void> {
@@ -64,10 +66,15 @@ export class PostgresSecurityEventStore implements SecurityEventStore {
   public async listAlerts(): Promise<SecurityAlert[]> {
     const rows = await this.db
       .selectFrom("security_alerts")
-      .select("alert_json")
+      .select(["alert_json", "acknowledged"])
       .orderBy("created_at", "asc")
       .execute();
-    return rows.map((row) => JSON.parse(row.alert_json) as SecurityAlert);
+    return rows.map((row) => (
+      {
+        ...(typeof row.alert_json === "string" ? JSON.parse(row.alert_json) : row.alert_json as SecurityAlert),
+        acknowledged: row.acknowledged,
+      } as SecurityAlert
+    ));
   }
 
   public async acknowledgeAlert(alertId: string): Promise<void> {

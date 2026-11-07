@@ -1,0 +1,55 @@
+{
+  "realm": "guardmesh",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "clients": [
+    {
+      "clientId": "demo-web",
+      "name": "GuardMesh demo web",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost/*"],
+      "webOrigins": ["http://localhost"] ,
+      "defaultClientScopes": ["profile", "email", "roles", "guardmesh-api-audience"]
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "guardmesh-api-audience",
+      "protocol": "openid-connect",
+      "attributes": {"include.in.token.scope": "true"},
+      "protocolMappers": [
+        {
+          "name": "guardmesh-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {"included.client.audience": "guardmesh-api", "access.token.claim": "true"}
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "cashier-1",
+      "username": "cashier-1",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "change-me-local-only", "temporary": false}]
+    },
+    {
+      "id": "manager-1",
+      "username": "manager-1",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "change-me-local-only", "temporary": false}]
+    },
+    {
+      "id": "operator-1",
+      "username": "operator-1",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "change-me-local-only", "temporary": false}]
+    }
+  ]
+}

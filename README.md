@@ -6,9 +6,9 @@ It demonstrates how to combine standard identity, service-side authorization, re
 
 ## Status
 
-**Implementation in progress — Phase 0 documentation and governance alignment.**
+**Phase implementation complete on `dev`; local verification is automated.**
 
-The repository contains the workspace foundation and initial shared authorization contracts. The detailed project specification and development plan are maintained outside the public repository. Features are not considered implemented, verified, measured, or production-ready until code and repeatable evidence exist.
+GuardMesh is a working reference implementation. It includes shared authentication and authorization code, three service APIs, replay-safe domain logic, event and outbox primitives, security telemetry, local infrastructure, and repeatable evaluation scenarios. It is not a production deployment; production readiness still requires environment-specific security, capacity, and operations review.
 
 ## Planned architecture
 
@@ -38,9 +38,41 @@ The restaurant workflow is only a replaceable demonstration domain. GuardMesh is
 
 ## Current development phase
 
-The project is implementing the approved plan one module at a time. Phase 0 restores the project documents; the next development step is the secure Orders vertical slice.
+All planned implementation phases are complete on `dev`. The public repository intentionally excludes the private project and development-plan documents.
 
-Until those steps are complete, there are no executable setup or test commands to promise.
+## Local verification
+
+Prerequisites: Node 24.22.x, pnpm 12.18.0, Docker Compose, and the pinned OPA CLI for policy tests.
+
+```sh
+corepack enable
+pnpm install --frozen-lockfile
+pnpm test
+pnpm typecheck
+pnpm build
+pnpm policy:test
+pnpm compose:config
+pnpm audit --audit-level high
+```
+
+## Local environment
+
+Copy `.env.example` to `.env`, then start the stack:
+
+```sh
+cp .env.example .env
+docker compose --env-file .env up --build
+```
+
+The first PostgreSQL startup applies the service migrations and synthetic inventory seed. Keycloak imports the local `guardmesh` realm with the `demo-web` client and synthetic users. The named PostgreSQL volume is initialized only once; remove that specific volume and recreate the stack when testing a fresh schema.
+
+Host ports are configurable through `POSTGRES_PORT`, `RABBITMQ_PORT`, `RABBITMQ_MANAGEMENT_PORT`, `KEYCLOAK_PORT`, `OPA_PORT`, and `TRAEFIK_PORT` when a default port is already in use.
+
+Health endpoints are available through the gateway at `/api/orders/health/live`, `/api/inventory/health/live`, and `/api/security/health/live`. API routes are `/api/orders`, `/api/inventory`, and `/api/security`.
+
+The browser demo completes the PKCE authorization flow and keeps access tokens in memory. The imported local users use the password shown in `.env.example`; change all credentials before using any shared environment.
+
+For recovery and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
 
 ## Engineering principles
 

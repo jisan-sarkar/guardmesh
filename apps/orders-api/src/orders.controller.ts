@@ -8,7 +8,6 @@ import {
   Req,
   UseGuards,
 } from "@nestjs/common";
-import type { FastifyRequest } from "fastify";
 
 import type { AuthenticatedRequest } from "./auth.guard.js";
 import { AccessTokenGuard } from "./auth.guard.js";
@@ -35,8 +34,9 @@ export class OrdersController {
   }
 }
 
+@Controller("orders/health")
 export class HealthController {
-  @Get("health/live")
+  @Get("live")
   public live() {
     return { status: "ok" };
   }

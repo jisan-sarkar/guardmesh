@@ -8,17 +8,17 @@ http:
       entryPoints: [web]
       rule: "PathPrefix(`/api/orders`)"
       service: orders-api
-      middlewares: [baseline-rate-limit]
+      middlewares: [api-strip-prefix, baseline-rate-limit]
     inventory-api:
       entryPoints: [web]
       rule: "PathPrefix(`/api/inventory`)"
       service: inventory-api
-      middlewares: [baseline-rate-limit]
+      middlewares: [api-strip-prefix, baseline-rate-limit]
     security-api:
       entryPoints: [web]
       rule: "PathPrefix(`/api/security`)"
       service: security-api
-      middlewares: [baseline-rate-limit]
+      middlewares: [api-strip-prefix, baseline-rate-limit]
 
   services:
     demo-web:
@@ -39,6 +39,9 @@ http:
           - url: "http://security-api:3002"
 
   middlewares:
+    api-strip-prefix:
+      stripPrefix:
+        prefixes: [/api]
     baseline-rate-limit:
       rateLimit:
         average: 100

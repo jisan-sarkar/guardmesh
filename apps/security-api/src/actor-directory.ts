@@ -15,7 +15,14 @@ export function actorDirectoryFromEnvironment(): SecurityActorDirectory {
   }
   const actors = new Map<string, SecurityActor>();
   for (const [subject, value] of Object.entries(parsed)) {
-    if (typeof value !== "object" || value === null || !Array.isArray((value as { roles?: unknown }).roles)) {
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !Array.isArray((value as { roles?: unknown }).roles) ||
+      !(value as { roles: unknown[] }).roles.every(
+        (role) => typeof role === "string" && role.length > 0,
+      )
+    ) {
       throw new Error("ACTOR_DIRECTORY_JSON contains an invalid actor");
     }
     actors.set(subject, { actorId: subject, roles: (value as { roles: string[] }).roles });

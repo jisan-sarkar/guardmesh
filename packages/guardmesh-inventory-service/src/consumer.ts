@@ -9,6 +9,13 @@ import {
 import type { AuthorizationDecision } from "@guardmesh/contracts";
 import type { PolicyEnforcementAdapter } from "@guardmesh/policy";
 import type { InventoryStore } from "./store.js";
+import { z } from "zod";
+
+const stockAdjustmentSchema = z.object({
+  sku: z.string().min(1),
+  locationId: z.string().min(1),
+  delta: z.number().int().refine((value) => value !== 0, "stock adjustment delta must be non-zero"),
+});
 
 export type EventIdFactory = () => string;
 export type Clock = () => string;
@@ -32,24 +39,33 @@ export class InventoryService {
     private readonly policy: Pick<PolicyEnforcementAdapter, "authorize">,
   ) {}
 
-  public getItems(actor: InventoryActor): Promise<InventoryState["items"]> {
+  public async getItems(actor: InventoryActor): Promise<InventoryState["items"]> {
+    const decision = await this.policy.authorize({
+      actorId: actor.actorId,
+      actorRoles: actor.roles,
+      actorLocationId: actor.locationId,
+      action: "inventory.read",
+      resourceType: "inventory",
+      resourceId: actor.locationId,
+      resourceLocationId: actor.locationId,
+    });
+    if (!decision.allow) throw new InventoryForbiddenError(decision);
+
     return this.store.list(actor.locationId);
   }
 
   public async adjustStock(
     actor: InventoryActor,
-    input: Readonly<{ sku: string; locationId: string; delta: number }>,
+    input: unknown,
   ): Promise<InventoryState["items"][string]> {
-    if (!Number.isInteger(input.delta) || input.delta === 0) {
-      throw new Error("stock adjustment delta must be a non-zero integer");
-    }
+    const adjustment = stockAdjustmentSchema.parse(input);
 
-    if (input.locationId !== actor.locationId) {
+    if (adjustment.locationId !== actor.locationId) {
       throw new Error("inventory item not found");
     }
 
     const items = await this.store.list(actor.locationId);
-    const item = items[input.sku];
+    const item = items[adjustment.sku];
     if (!item) throw new Error("inventory item not found");
 
     const decision = await this.policy.authorize({
@@ -58,12 +74,12 @@ export class InventoryService {
       actorLocationId: actor.locationId,
       action: "inventory.adjust",
       resourceType: "inventory",
-      resourceId: input.sku,
+      resourceId: adjustment.sku,
       resourceLocationId: item.locationId,
     });
     if (!decision.allow) throw new InventoryForbiddenError(decision);
 
-    return this.store.adjust(input.sku, input.locationId, input.delta);
+    return this.store.adjust(adjustment.sku, adjustment.locationId, adjustment.delta);
   }
 }
 

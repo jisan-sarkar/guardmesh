@@ -32,7 +32,7 @@ export class InventoryController {
   }
 }
 
-@Controller("health")
+@Controller("inventory/health")
 export class HealthController {
   @Get("live")
   public live() {

@@ -1,9 +1,14 @@
 #!/usr/bin/env sh
 set -eu
 
-if git diff --cached --name-only | grep -E '(^|/)(\.env($|\.)|.*(secret|credential|private[-_]?key).*)' >/dev/null 2>&1; then
-  echo "refusing staged files that look like secrets" >&2
-  exit 1
-fi
+git diff --cached --name-only | while IFS= read -r file; do
+  case "$file" in
+    ".env.example") ;;
+    ".env"|*/.env|.env.*|*/.env.*|*secret*|*credential*|*private-key*|*private_key*)
+      echo "refusing staged file that looks like a secret: $file" >&2
+      exit 1
+      ;;
+  esac
+done
 
 git diff --cached --check

@@ -8,7 +8,7 @@
     "test": "pnpm --recursive --if-present test",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "build": "pnpm --recursive --if-present build",
-    "policy:test": "opa test packages/guardmesh-policy/policy",
+    "policy:test": "scripts/policy-test.sh",
     "compose:config": "docker compose --env-file .env.example config"
   },
   "engines": {

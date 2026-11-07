@@ -9,10 +9,10 @@ export type OrdersDatabase = {
     actor_id: string;
     request_fingerprint: string;
     location_id: string;
-    items_json: string;
+    items_json: unknown;
     status: Order["status"];
     version: number;
-    created_at: string;
+    created_at: string | Date;
   };
 };
 
@@ -28,10 +28,12 @@ function mapRow(row: OrdersDatabase["orders"]): Order {
     orderId: row.order_id,
     requestFingerprint: row.request_fingerprint,
     locationId: row.location_id,
-    items: orderItemSchema.array().parse(JSON.parse(row.items_json)),
+    items: orderItemSchema.array().parse(
+      typeof row.items_json === "string" ? JSON.parse(row.items_json) : row.items_json,
+    ),
     status: orderStatusSchema.parse(row.status),
     version: row.version,
-    createdAt: row.created_at,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
   };
 }
 

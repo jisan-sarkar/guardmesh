@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { createAuthorizationUrl, MemoryTokenStore } from "./auth";
+import { createAuthorizationUrl, exchangeAuthorizationCode, MemoryTokenStore } from "./auth";
 
 const tokenStore = new MemoryTokenStore();
 const oidcConfig = {
@@ -13,6 +13,31 @@ const oidcConfig = {
 export function App() {
   const [message, setMessage] = useState("Not authenticated");
 
+  useEffect(() => {
+    const callback = new URL(window.location.href);
+    const code = callback.searchParams.get("code");
+    if (callback.pathname !== "/callback" || !code) return;
+
+    const verifier = sessionStorage.getItem("guardmesh.pkce_verifier");
+    if (!verifier) {
+      setMessage("Sign-in could not be completed: the PKCE verifier is missing");
+      return;
+    }
+
+    void exchangeAuthorizationCode({
+      issuer: oidcConfig.issuer,
+      clientId: oidcConfig.clientId,
+      redirectUri: oidcConfig.redirectUri,
+      code,
+      verifier,
+    }).then((tokens) => {
+      tokenStore.set(tokens);
+      sessionStorage.removeItem("guardmesh.pkce_verifier");
+      window.history.replaceState({}, "", "/");
+      setMessage("Authenticated; access token is held in memory");
+    }).catch(() => setMessage("Sign-in failed; please try again"));
+  }, []);
+
   async function signIn() {
     const { url, verifier } = await createAuthorizationUrl(oidcConfig);
     sessionStorage.setItem("guardmesh.pkce_verifier", verifier);
@@ -24,6 +49,27 @@ export function App() {
     setMessage("Signed out; the access token was cleared from memory");
   }
 
+  async function createOrder() {
+    const tokens = tokenStore.get();
+    if (!tokens || tokens.expiresAt <= Date.now()) {
+      setMessage("Sign in before creating an order");
+      return;
+    }
+
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokens.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requestFingerprint: crypto.randomUUID(),
+        items: [{ sku: "sku-1", quantity: 1 }],
+      }),
+    });
+    setMessage(response.ok ? "Order accepted and awaiting stock" : `Order request failed (${response.status})`);
+  }
+
   return (
     <main>
       <h1>GuardMesh</h1>
@@ -31,6 +77,7 @@ export function App() {
       <p aria-live="polite">{message}</p>
       <button type="button" onClick={() => void signIn()}>Sign in</button>{" "}
       <button type="button" onClick={signOut}>Clear session</button>
+      <button type="button" onClick={() => void createOrder()}>Create demo order</button>
       <section>
         <h2>Demo flows</h2>
         <ul>

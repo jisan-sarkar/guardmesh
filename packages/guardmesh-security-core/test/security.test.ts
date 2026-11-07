@@ -47,6 +47,10 @@ describe("security events and alerts", () => {
       count: 3,
       acknowledged: false,
     });
+    await expect(evaluator.evaluate(sanitizeSecurityEvent({ ...denial, eventId: "event-4" }))).resolves.toMatchObject({
+      alertId: "alert-1",
+      count: 3,
+    });
   });
 
   it("does not alert on an isolated allowed event", async () => {

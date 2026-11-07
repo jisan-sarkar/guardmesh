@@ -100,8 +100,14 @@ export class SecurityAlertEvaluator {
 
   public async evaluate(event: SecurityEvent): Promise<SecurityAlert | undefined> {
     const events = await this.store.list();
+    const alerts = await this.store.listAlerts();
     const now = Date.parse(this.clock());
-    const recent = events.filter((candidate) => now - Date.parse(candidate.occurredAt) <= this.config.windowMs);
+    const observedEvents = events.some((candidate) => candidate.eventId === event.eventId)
+      ? events
+      : [...events, event];
+    const recent = observedEvents.filter(
+      (candidate) => now - Date.parse(candidate.occurredAt) <= this.config.windowMs,
+    );
     const isDenial = event.type === "AUTHORIZATION_DECISION" && event.outcome === "DENY";
     const isPolicyFailure = event.type === "POLICY_FAILURE" && event.outcome === "FAILURE";
     const rule = isDenial
@@ -118,11 +124,19 @@ export class SecurityAlertEvaluator {
           `${candidate.actorId ?? "unknown"}:${candidate.resourceType ?? "unknown"}` === correlationKey;
       }
       return candidate.type === "POLICY_FAILURE" && candidate.outcome === "FAILURE";
-    }).length + 1;
+    }).length;
     const threshold = rule === "REPEATED_AUTHORIZATION_DENIAL"
       ? this.config.denialThreshold
       : this.config.policyFailureThreshold;
     if (count < threshold) return undefined;
+
+    const existing = alerts.find(
+      (alert) =>
+        alert.rule === rule &&
+        alert.correlationKey === correlationKey &&
+        Date.parse(alert.createdAt) >= now - this.config.windowMs,
+    );
+    if (existing) return existing;
 
     const alert: SecurityAlert = {
       alertId: this.alertIdFactory(),

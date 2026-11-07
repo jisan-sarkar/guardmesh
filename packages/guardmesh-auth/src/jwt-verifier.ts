@@ -67,6 +67,7 @@ export function createVerifier(
       const { payload } = await jwtVerify(token, getKey, {
         issuer: config.issuer,
         audience: config.audience,
+        algorithms: ["RS256"],
         requiredClaims: ["sub", "iss", "aud", "exp"],
       });
 

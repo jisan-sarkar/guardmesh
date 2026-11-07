@@ -57,7 +57,7 @@ type InventoryDatabase = {
     order_id: string;
     request_fingerprint: string;
     location_id: string;
-    items_json: string;
+    items_json: unknown;
     result: "RESERVED" | "REJECTED";
     created_at: string;
   };
@@ -119,7 +119,11 @@ export class PostgresInventoryStore implements InventoryStore {
           orderId: existing.order_id,
           requestFingerprint: existing.request_fingerprint,
           locationId: existing.location_id,
-          items: reservationLineSchema.array().parse(JSON.parse(existing.items_json)),
+          items: reservationLineSchema.array().parse(
+            typeof existing.items_json === "string"
+              ? JSON.parse(existing.items_json)
+              : existing.items_json,
+          ),
           result: existing.result,
         };
       }

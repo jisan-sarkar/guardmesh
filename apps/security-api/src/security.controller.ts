@@ -33,7 +33,7 @@ export class SecurityController {
   }
 }
 
-@Controller("health")
+@Controller("security/health")
 export class HealthController {
   @Get("live")
   public live() {
