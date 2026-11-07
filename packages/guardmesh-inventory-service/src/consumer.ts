@@ -170,8 +170,7 @@ export class InventoryService {
 
     defaultMetrics.increment(guardMeshMetrics.authorizationAllowed);
 
-    const result = await this.store.adjust(adjustment.sku, adjustment.locationId, adjustment.delta);
-    publishSecurityEvent({
+    const auditEvent = {
       version: 1,
       eventId: this.eventIdFactory(),
       type: "PRIVILEGED_ACTION",
@@ -185,7 +184,11 @@ export class InventoryService {
       locationId: actor.locationId,
       reason: "inventory adjustment applied",
       metadata: { delta: adjustment.delta, policyVersion: decision.policyVersion },
-    });
+    } as const;
+    const result = this.store.adjustWithAudit
+      ? await this.store.adjustWithAudit(adjustment.sku, adjustment.locationId, adjustment.delta, auditEvent)
+      : await this.store.adjust(adjustment.sku, adjustment.locationId, adjustment.delta);
+    if (!this.store.adjustWithAudit) publishSecurityEvent(auditEvent);
     return result;
   }
 }

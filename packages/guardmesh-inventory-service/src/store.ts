@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect } from "kysely";
+import { Kysely, PostgresDialect, type Transaction } from "kysely";
 import pg from "pg";
 
 import {
@@ -20,6 +20,12 @@ import {
 export interface InventoryStore {
   list(locationId: string): Promise<Readonly<Record<string, InventoryItem>>>;
   adjust(sku: string, locationId: string, delta: number): Promise<InventoryItem>;
+  adjustWithAudit?: (
+    sku: string,
+    locationId: string,
+    delta: number,
+    auditEvent: Readonly<Record<string, unknown>>,
+  ) => Promise<InventoryItem>;
   reserve(command: ReserveStockCommand): Promise<Reservation>;
 }
 
@@ -104,7 +110,38 @@ export class PostgresInventoryStore implements InventoryStore {
   }
 
   public async adjust(sku: string, locationId: string, delta: number): Promise<InventoryItem> {
+    return this.db.transaction().execute((transaction) => this.adjustInTransaction(transaction, sku, locationId, delta));
+  }
+
+  public async adjustWithAudit(
+    sku: string,
+    locationId: string,
+    delta: number,
+    auditEvent: Readonly<Record<string, unknown>>,
+  ): Promise<InventoryItem> {
     return this.db.transaction().execute(async (transaction) => {
+      const result = await this.adjustInTransaction(transaction, sku, locationId, delta);
+      await transaction
+        .insertInto("inventory_outbox")
+        .values({
+          event_id: String(auditEvent.eventId),
+          event_type: String(auditEvent.type),
+          payload_json: JSON.stringify(auditEvent),
+          attempts: 0,
+          published_at: null,
+          created_at: String(auditEvent.occurredAt),
+        })
+        .execute();
+      return result;
+    });
+  }
+
+  private async adjustInTransaction(
+    transaction: Transaction<InventoryDatabase>,
+    sku: string,
+    locationId: string,
+    delta: number,
+  ): Promise<InventoryItem> {
       const row = await transaction
         .selectFrom("inventory_items")
         .selectAll()
@@ -122,7 +159,6 @@ export class PostgresInventoryStore implements InventoryStore {
         .where("version", "=", row.version)
         .executeTakeFirstOrThrow();
       return { sku, locationId, available: row.available + delta };
-    });
   }
 
   public async reserve(input: ReserveStockCommand): Promise<Reservation> {
