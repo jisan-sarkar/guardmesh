@@ -5,7 +5,9 @@ export const authorizationRequestSchema = z.object({
   action: z.string().min(1),
   resourceType: z.string().min(1),
   resourceId: z.string().min(1),
-  locationId: z.string().min(1).optional(),
+  actorRoles: z.array(z.string().min(1)).default([]),
+  actorLocationId: z.string().min(1).optional(),
+  resourceLocationId: z.string().min(1).optional(),
 });
 
 export const authorizationDecisionSchema = z.object({

@@ -13,7 +13,9 @@ describe("authorization contracts", () => {
       action: "order.create",
       resourceType: "order",
       resourceId: "order-1",
-      locationId: "loc-a",
+      actorRoles: ["cashier"],
+      actorLocationId: "loc-a",
+      resourceLocationId: "loc-a",
     });
 
     expect(result.success).toBe(true);
