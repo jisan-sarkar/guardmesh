@@ -24,6 +24,16 @@ for path in api/orders/health/ready api/inventory/health/ready api/security/heal
   done
 done
 
+header_probe="$(curl --connect-timeout 2 --max-time 5 -fsSI "$base_url/api/inventory/health/live")"
+printf '%s\n' "$header_probe" | grep -i '^content-security-policy:' >/dev/null || {
+  echo "missing Content-Security-Policy response header" >&2
+  exit 1
+}
+printf '%s\n' "$header_probe" | grep -i '^x-content-type-options: nosniff' >/dev/null || {
+  echo "missing X-Content-Type-Options response header" >&2
+  exit 1
+}
+
 queue_names="$(docker exec "$rabbitmq_container" rabbitmqctl list_queues -p guardmesh 2>/dev/null | awk 'NR > 1 { print $1 }')"
 for queue in inventory.orders orders.stock-results security.events inventory.orders.failed orders.stock-results.failed security.events.failed; do
   printf '%s\n' "$queue_names" | grep -Fx "$queue" >/dev/null || {

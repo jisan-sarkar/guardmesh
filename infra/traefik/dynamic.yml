@@ -8,17 +8,17 @@ http:
       entryPoints: [web]
       rule: "PathPrefix(`/api/orders`)"
       service: orders-api
-      middlewares: [api-strip-prefix, baseline-rate-limit]
+      middlewares: [api-strip-prefix, baseline-rate-limit, security-headers]
     inventory-api:
       entryPoints: [web]
       rule: "PathPrefix(`/api/inventory`)"
       service: inventory-api
-      middlewares: [api-strip-prefix, baseline-rate-limit]
+      middlewares: [api-strip-prefix, baseline-rate-limit, security-headers]
     security-api:
       entryPoints: [web]
       rule: "PathPrefix(`/api/security`)"
       service: security-api
-      middlewares: [api-strip-prefix, baseline-rate-limit]
+      middlewares: [api-strip-prefix, baseline-rate-limit, security-headers]
 
   services:
     demo-web:
@@ -46,3 +46,10 @@ http:
       rateLimit:
         average: 100
         burst: 200
+    security-headers:
+      headers:
+        contentTypeNosniff: true
+        customFrameOptionsValue: DENY
+        referrerPolicy: no-referrer
+        permissionsPolicy: "camera=(), geolocation=(), microphone=()"
+        contentSecurityPolicy: "default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"

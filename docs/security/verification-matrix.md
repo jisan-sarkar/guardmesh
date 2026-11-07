@@ -19,8 +19,8 @@ Evidence labels:
 | V2.3.3 | Orders, inventory reservation, inbox, outbox, and security updates use database transactions; service tests cover rollback/idempotency paths. | Verified | Crash/fault evidence is still narrower than a production outage drill. |
 | V2.3.4 | Inventory reservation uses conditional updates/locking and concurrent reservation tests. | Verified | Multi-replica load evidence is not yet recorded. |
 | V3.4.2 | No permissive application CORS policy is configured for the local API. | Partial | A deployed origin allowlist and browser-origin test are required. |
-| V3.4.3 | The local demo does not claim a production CSP. | Gap | Add and test a deployment-specific CSP before internet exposure. |
-| V3.4.4 | The local Compose gateway is HTTP-only and does not provide a production header baseline. | Gap | Add TLS/security headers in the deployment profile and verify them externally. |
+| V3.4.3 | Traefik applies `default-src 'self'`, `object-src 'none'`, `base-uri 'none'`, and `frame-ancestors 'none'` to API responses. | Verified | Verify the equivalent policy on the TLS deployment profile. |
+| V3.4.4 | Traefik applies `X-Content-Type-Options: nosniff` through the shared security-headers middleware. | Verified | Keep this assertion in gateway smoke tests. |
 | V4.1.1 | Nest/Fastify responses and the global exception filter emit JSON content types; runtime smoke exercises health and API responses. | Verified | Expand response-header assertions to every public route. |
 | V4.1.3 | Service authorization does not trust caller-supplied identity headers; actor identity comes from verified token claims and server mapping. | Partial | Forwarded-header trust must be verified at the real TLS ingress. |
 | V6.8.2 | `packages/guardmesh-auth/test/jwt-verifier.test.ts` rejects invalid signatures and accepts only configured issuer/audience/algorithm claims. | Verified | Exercise live Keycloak key rotation in CI. |
@@ -42,7 +42,7 @@ Evidence labels:
 
 The matrix intentionally records unresolved release work rather than hiding it:
 
-1. Production TLS, CSP, CORS, trusted-proxy, and private management-path verification.
+1. Production TLS, HSTS, CORS, trusted-proxy, and private management-path verification.
 2. Live Keycloak/JWKS rotation and service-credential rotation tests.
 3. Playwright browser smoke, k6 results with raw artifacts, and fault/recovery reports.
 4. A complete external-ingress/direct-service bypass matrix and selected ASVS retest.
