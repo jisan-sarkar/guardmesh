@@ -33,6 +33,8 @@ The first release will prove, with tests and documented experiments:
 4. Structured, redacted security events and explainable alert rules.
 5. Correlated traces, metrics, and logs across synchronous and asynchronous work.
 
+To enable the optional telemetry stack, set `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` in `.env` and run `docker compose --profile observability --env-file .env up --build`. Jaeger is available at `http://localhost:16686`; telemetry export is opt-in so the core profile does not require the collector.
+
 6. Reproducible setup, failure experiments, and performance evidence.
 
 Operational checks are available through `/orders/health/live`, `/orders/health/ready`,

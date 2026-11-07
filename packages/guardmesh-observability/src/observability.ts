@@ -1,6 +1,32 @@
 import { context, trace, type Span, type Tracer } from "@opentelemetry/api";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 
 const correlationPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
+
+let telemetrySdk: NodeSDK | undefined;
+
+/** Start OTLP export only when explicitly configured; local core stays dependency-free. */
+export async function startTelemetry(serviceName: string): Promise<void> {
+  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.replace(/\/$/u, "");
+  if (!endpoint || telemetrySdk) return;
+
+  telemetrySdk = new NodeSDK({
+    resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName }),
+    traceExporter: new OTLPTraceExporter({ url: `${endpoint}/v1/traces` }),
+    metricReaders: [new PeriodicExportingMetricReader({
+      exporter: new OTLPMetricExporter({ url: `${endpoint}/v1/metrics` }),
+    })],
+    instrumentations: [new HttpInstrumentation()],
+  });
+  await telemetrySdk.start();
+  process.once("SIGTERM", () => void telemetrySdk?.shutdown());
+}
 
 export function getOrCreateCorrelationId(input: string | undefined, createId: () => string = () => crypto.randomUUID()): string {
   return input && correlationPattern.test(input) ? input : createId();
