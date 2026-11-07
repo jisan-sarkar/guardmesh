@@ -6,6 +6,7 @@
 - [ ] OPA policy tests pass with the pinned CLI.
 - [ ] `pnpm audit --audit-level high` reports no high-severity vulnerabilities or has an explicit reviewed exception.
 - [ ] `docker compose --env-file .env.example config` passes.
+- [ ] Generated OpenAPI JSON is enabled only in approved non-production environments and validated against the running gateway routes.
 - [ ] No real secrets, customer data, or generated credentials are committed.
 - [ ] Authorization-negative, duplicate-message, and dependency-outage evidence is recorded.
 - [ ] Backup/restore evidence is recorded in an isolated synthetic environment, including the database dump, configuration bundle, source commit, and representative workflow records after restore.

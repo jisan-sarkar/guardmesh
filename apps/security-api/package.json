@@ -13,12 +13,13 @@
     "@guardmesh/auth": "workspace:*",
     "@guardmesh/http": "workspace:*",
     "@guardmesh/messaging": "workspace:*",
+    "@guardmesh/observability": "workspace:*",
     "@guardmesh/security-core": "workspace:*",
     "@guardmesh/security-service": "workspace:*",
-    "@guardmesh/observability": "workspace:*",
     "@nestjs/common": "^11.1.9",
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-fastify": "^11.1.9",
+    "@nestjs/swagger": "^11.4.8",
     "fastify": "^5.12.2",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
@@ -27,8 +28,8 @@
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.5",
-    "typescript": "^5.9.3",
     "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.12"
   }
 }

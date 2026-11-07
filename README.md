@@ -90,6 +90,8 @@ The internal inventory catalogue is restricted to the confidential `orders-servi
 
 Backup/restore uses an explicit target for safety. Run `DATABASE_URL=... BACKUP_DIR=... scripts/backup-restore.sh backup`, then restore with `RESTORE_DATABASE_URL=... scripts/backup-restore.sh restore <dump-file>`. A backup includes the database dump, source commit, and non-secret realm, broker, policy, migration, and Compose configuration bundle.
 
+Generated OpenAPI JSON is opt-in for local contract inspection. Set `ENABLE_API_DOCS=true` before starting Compose, then use `/api/orders/docs/openapi.json`, `/api/inventory/docs/openapi.json`, or `/api/security/docs/openapi.json`. Documentation routes remain disabled in production and by default.
+
 For recovery and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
 
 ## Engineering principles
