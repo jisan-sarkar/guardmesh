@@ -1,3 +1,8 @@
+CREATE TABLE orders_schema_migrations (
+  migration_id TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE orders (
   order_id TEXT PRIMARY KEY,
   actor_id TEXT NOT NULL,
@@ -25,3 +30,7 @@ CREATE TABLE orders_inbox (
   event_id TEXT PRIMARY KEY,
   received_at TIMESTAMPTZ NOT NULL
 );
+
+INSERT INTO orders_schema_migrations (migration_id)
+VALUES ('001_create_orders')
+ON CONFLICT (migration_id) DO NOTHING;

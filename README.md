@@ -76,7 +76,7 @@ cp .env.example .env
 docker compose --env-file .env up --build
 ```
 
-The first PostgreSQL startup applies the service migrations and synthetic inventory seed. Keycloak imports the local `guardmesh` realm with the `demo-web` client and synthetic users. The named PostgreSQL volume is initialized only once; use a fresh isolated volume when testing a complete schema bootstrap. Existing volumes must be migrated deliberately; workers do not create or repair schema objects at runtime.
+The first PostgreSQL startup applies the service migrations and synthetic inventory seed. Each service records its migration ID and refuses workflow readiness when the expected schema version is missing. Keycloak imports the local `guardmesh` realm with the `demo-web` client and synthetic users. The named PostgreSQL volume is initialized only once; use a fresh isolated volume when testing a complete schema bootstrap. Existing volumes must be migrated deliberately; workers do not create or repair schema objects at runtime.
 
 An accepted order is written as `PENDING_STOCK`, published through the durable Orders outbox, reserved atomically by Inventory, and finalized by the Orders inbox consumer. Duplicate event delivery is intentionally safe and does not decrement stock twice.
 

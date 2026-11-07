@@ -13,6 +13,7 @@ export async function startOrdersWorkflow(): Promise<void> {
 
   try {
     const pool = new pg.Pool({ connectionString: databaseUrl });
+    await assertMigration(pool, "orders_schema_migrations", "001_create_orders");
     const repository = new PostgresOrderRepository(createOrdersDatabase(databaseUrl));
     const broker = await connectWorkflowBroker(brokerUrl, { topologies: [ordersStockTopology], exchanges: [securityExchange] });
     configureSecurityEventPublisher((event) => {
@@ -50,4 +51,12 @@ export async function startOrdersWorkflow(): Promise<void> {
     console.error("orders workflow is unavailable", error);
     setTimeout(() => void startOrdersWorkflow(), 2_000);
   }
+}
+
+async function assertMigration(pool: pg.Pool, tableName: string, migrationId: string): Promise<void> {
+  const result = await pool.query(
+    `SELECT 1 FROM ${tableName} WHERE migration_id = $1`,
+    [migrationId],
+  );
+  if (result.rowCount !== 1) throw new Error(`required migration is missing: ${migrationId}`);
 }

@@ -15,6 +15,7 @@ export async function startInventoryWorkflow(): Promise<void> {
 
   try {
     const pool = new pg.Pool({ connectionString: databaseUrl });
+    await assertMigration(pool, "inventory_schema_migrations", "001_create_inventory");
     const store = new PostgresInventoryStore(createInventoryDatabase(databaseUrl));
     const broker = await connectWorkflowBroker(brokerUrl, { topologies: [inventoryOrderTopology], exchanges: [securityExchange] });
     configureSecurityEventPublisher((event) => {
@@ -56,4 +57,12 @@ export async function startInventoryWorkflow(): Promise<void> {
     console.error("inventory workflow is unavailable", error);
     setTimeout(() => void startInventoryWorkflow(), 2_000);
   }
+}
+
+async function assertMigration(pool: pg.Pool, tableName: string, migrationId: string): Promise<void> {
+  const result = await pool.query(
+    `SELECT 1 FROM ${tableName} WHERE migration_id = $1`,
+    [migrationId],
+  );
+  if (result.rowCount !== 1) throw new Error(`required migration is missing: ${migrationId}`);
 }

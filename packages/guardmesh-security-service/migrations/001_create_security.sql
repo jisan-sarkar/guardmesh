@@ -1,3 +1,8 @@
+CREATE TABLE security_schema_migrations (
+  migration_id TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE security_events (
   event_id TEXT PRIMARY KEY,
   event_json JSONB NOT NULL,
@@ -21,3 +26,7 @@ ALTER TABLE security_alerts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAUL
 
 CREATE INDEX security_events_occurred_at_idx ON security_events (occurred_at);
 CREATE INDEX security_alerts_created_at_idx ON security_alerts (created_at);
+
+INSERT INTO security_schema_migrations (migration_id)
+VALUES ('001_create_security')
+ON CONFLICT (migration_id) DO NOTHING;

@@ -1,3 +1,8 @@
+CREATE TABLE inventory_schema_migrations (
+  migration_id TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE inventory_items (
   sku TEXT PRIMARY KEY,
   location_id TEXT NOT NULL,
@@ -31,3 +36,7 @@ CREATE TABLE inventory_outbox (
   published_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL
 );
+
+INSERT INTO inventory_schema_migrations (migration_id)
+VALUES ('001_create_inventory')
+ON CONFLICT (migration_id) DO NOTHING;

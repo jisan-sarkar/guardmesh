@@ -15,5 +15,8 @@ GRANT CONNECT ON DATABASE guardmesh TO orders_app, inventory_app, security_app;
 GRANT USAGE ON SCHEMA public TO orders_app, inventory_app, security_app;
 
 GRANT SELECT, INSERT, UPDATE ON orders, orders_outbox, orders_inbox TO orders_app;
+GRANT SELECT ON orders_schema_migrations TO orders_app;
 GRANT SELECT, INSERT, UPDATE ON inventory_items, reservations, inventory_inbox, inventory_outbox TO inventory_app;
+GRANT SELECT ON inventory_schema_migrations TO inventory_app;
 GRANT SELECT, INSERT, UPDATE ON security_events, security_inbox, security_alerts TO security_app;
+GRANT SELECT ON security_schema_migrations TO security_app;
