@@ -82,6 +82,7 @@ export type GuardMeshMetrics = Readonly<{
   authorizationAllowed: string;
   authorizationDenied: string;
   policyFailures: string;
+  securityEventsDropped: string;
   outboxBacklog: string;
   brokerDeadLetters: string;
 }>;
@@ -93,6 +94,7 @@ export const guardMeshMetrics: GuardMeshMetrics = {
   authorizationAllowed: "guardmesh_authorization_allowed_total",
   authorizationDenied: "guardmesh_authorization_denied_total",
   policyFailures: "guardmesh_policy_failures_total",
+  securityEventsDropped: "guardmesh_security_events_dropped_total",
   outboxBacklog: "guardmesh_outbox_backlog",
   brokerDeadLetters: "guardmesh_broker_dead_letters_total",
 };

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ConsumeMessage } from "amqplib";
 
-import { RabbitMqPublisher, configureTopology, consumeWithAck } from "../src/rabbitmq.js";
+import { RabbitMqPublisher, configureSecurityEventPublisher, configureTopology, consumeWithAck, publishSecurityEvent } from "../src/rabbitmq.js";
 
 const topology = {
   exchange: "guardmesh.events",
@@ -57,6 +57,15 @@ describe("RabbitMQ transport", () => {
 
     await publisher.publishConfirmed({ eventId: "event-1", type: "orders.order-created.v1" });
     expect(waitForConfirms).toHaveBeenCalledOnce();
+  });
+
+  it("does not let best-effort security publication failures escape", () => {
+    configureSecurityEventPublisher(() => {
+      throw new Error("broker unavailable");
+    });
+
+    expect(publishSecurityEvent({ type: "AUTHORIZATION_DECISION" })).toBe(false);
+    configureSecurityEventPublisher(() => undefined);
   });
 
   it("fails confirmed publication when RabbitMQ returns the mandatory message", async () => {

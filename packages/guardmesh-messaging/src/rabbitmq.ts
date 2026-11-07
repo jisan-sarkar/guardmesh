@@ -1,5 +1,6 @@
 import type { Channel, ConsumeMessage, Options } from "amqplib";
 import amqp from "amqplib";
+import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 
 export const workflowExchange = "guardmesh.events";
 export const securityExchange = "guardmesh.security";
@@ -142,8 +143,15 @@ export function configureSecurityEventPublisher(
   securityEventPublisher = publisher;
 }
 
-export function publishSecurityEvent(event: Readonly<Record<string, unknown>>): void {
-  securityEventPublisher?.(event);
+export function publishSecurityEvent(event: Readonly<Record<string, unknown>>): boolean {
+  if (!securityEventPublisher) return false;
+  try {
+    securityEventPublisher(event);
+    return true;
+  } catch {
+    defaultMetrics.increment(guardMeshMetrics.securityEventsDropped);
+    return false;
+  }
 }
 
 export type MessageHandler = (message: unknown, raw: ConsumeMessage) => Promise<void>;
