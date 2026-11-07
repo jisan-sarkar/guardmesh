@@ -6,8 +6,8 @@ import { InventoryService, InMemoryInventoryStore, PostgresInventoryStore, creat
 import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/policy";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
-import { AccessTokenGuard } from "./auth.guard.js";
-import { HealthController, InventoryController, MetricsController } from "./inventory.controller.js";
+import { AccessTokenGuard, InternalCatalogScopeGuard } from "./auth.guard.js";
+import { HealthController, InternalInventoryController, InventoryController, MetricsController } from "./inventory.controller.js";
 
 const policyToken = "POLICY_ADAPTER";
 const actorDirectoryToken = "ACTOR_DIRECTORY";
@@ -23,7 +23,7 @@ function inventoryStateFromEnvironment(): InventoryState {
 }
 
 @Module({
-  controllers: [InventoryController, HealthController, MetricsController],
+  controllers: [InventoryController, InternalInventoryController, HealthController, MetricsController],
   providers: [
     {
       provide: policyToken,
@@ -65,6 +65,7 @@ function inventoryStateFromEnvironment(): InventoryState {
       ) => new AccessTokenGuard(verifyToken, actorDirectory),
       inject: [verifierToken, actorDirectoryToken],
     },
+    InternalCatalogScopeGuard,
   ],
 })
 export class AppModule {}

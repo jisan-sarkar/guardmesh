@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
@@ -8,6 +8,7 @@ type TokenVerifier = (token: string) => Promise<VerifiedAccessToken>;
 
 export type AuthenticatedRequest = FastifyRequest & {
   actor?: Awaited<ReturnType<ActorDirectory["findBySubject"]>>;
+  accessToken?: VerifiedAccessToken;
 };
 
 @Injectable()
@@ -28,9 +29,22 @@ export class AccessTokenGuard implements CanActivate {
       const actor = await this.actorDirectory.findBySubject(verified.subject);
       if (!actor) throw new UnauthorizedException();
       request.actor = actor;
+      request.accessToken = verified;
       return true;
     } catch {
       throw new UnauthorizedException();
     }
+  }
+}
+
+@Injectable()
+export class InternalCatalogScopeGuard implements CanActivate {
+  public canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const requiredScope = process.env.INTERNAL_CATALOG_SCOPE ?? "inventory.catalog.read";
+    if (!request.accessToken?.scopes.includes(requiredScope)) {
+      throw new ForbiddenException("required internal scope is missing");
+    }
+    return true;
   }
 }

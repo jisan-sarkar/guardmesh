@@ -44,7 +44,14 @@ describe("JWT access-token verification", () => {
       subject: "cashier-1",
       issuer,
       audience: [audience],
+      scopes: [],
     });
+  });
+
+  it("normalizes space-delimited scopes", async () => {
+    const { privateKey, verifier } = await createVerifierFixture();
+    const token = await createToken(privateKey, { scope: "openid inventory.catalog.read" });
+    await expect(verifier(token)).resolves.toMatchObject({ scopes: ["openid", "inventory.catalog.read"] });
   });
 
   it("rejects a token with the wrong audience", async () => {

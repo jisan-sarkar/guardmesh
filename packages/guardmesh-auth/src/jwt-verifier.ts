@@ -17,6 +17,7 @@ export type VerifiedAccessToken = Readonly<{
   audience: string[];
   expiresAt: number;
   issuedAt?: number;
+  scopes: string[];
 }>;
 
 export class AccessTokenVerificationError extends Error {
@@ -50,6 +51,11 @@ function toVerifiedAccessToken(payload: JWTPayload): VerifiedAccessToken {
     audience,
     expiresAt: payload.exp,
     ...(typeof payload.iat === "number" ? { issuedAt: payload.iat } : {}),
+    scopes: typeof payload.scope === "string"
+      ? payload.scope.split(/\s+/u).filter(Boolean)
+      : Array.isArray(payload.scope)
+        ? payload.scope.filter((scope): scope is string => typeof scope === "string")
+        : [],
   };
 }
 
