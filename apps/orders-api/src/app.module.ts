@@ -8,7 +8,7 @@ import { OrdersService, PostgresOrderRepository, createOrdersDatabase } from "@g
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
 import { AccessTokenGuard } from "./auth.guard.js";
-import { HealthController, OrdersController } from "./orders.controller.js";
+import { HealthController, MetricsController, OrdersController } from "./orders.controller.js";
 
 const repositoryToken = "ORDERS_REPOSITORY";
 const policyToken = "POLICY_ADAPTER";
@@ -16,7 +16,7 @@ const actorDirectoryToken = "ACTOR_DIRECTORY";
 const verifierToken = "TOKEN_VERIFIER";
 
 @Module({
-  controllers: [OrdersController, HealthController],
+  controllers: [OrdersController, HealthController, MetricsController],
   providers: [
     {
       provide: repositoryToken,

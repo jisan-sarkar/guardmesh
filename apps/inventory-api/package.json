@@ -16,6 +16,7 @@
     "@guardmesh/inventory-service": "workspace:*",
     "@guardmesh/messaging": "workspace:*",
     "@guardmesh/outbox": "workspace:*",
+    "@guardmesh/observability": "workspace:*",
     "@guardmesh/policy": "workspace:*",
     "@nestjs/common": "^11.1.9",
     "@nestjs/core": "^11.1.9",

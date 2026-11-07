@@ -6,13 +6,13 @@ import { PostgresSecurityEventStore, SecurityService, createSecurityDatabase } f
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
 import { SecurityAuthGuard, SecurityOperatorGuard, SecurityProducerGuard } from "./auth.guard.js";
-import { HealthController, SecurityController } from "./security.controller.js";
+import { HealthController, MetricsController, SecurityController } from "./security.controller.js";
 
 const verifierToken = "TOKEN_VERIFIER";
 const directoryToken = "ACTOR_DIRECTORY";
 
 @Module({
-  controllers: [SecurityController, HealthController],
+  controllers: [SecurityController, HealthController, MetricsController],
   providers: [
     {
       provide: SecurityService,

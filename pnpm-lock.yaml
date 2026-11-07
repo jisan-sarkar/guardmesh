@@ -214,6 +214,9 @@ importers:
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../../packages/guardmesh-messaging
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-observability
       '@guardmesh/outbox':
         specifier: workspace:*
         version: link:../../packages/guardmesh-outbox
@@ -275,6 +278,9 @@ importers:
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../../packages/guardmesh-messaging
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-observability
       '@guardmesh/orders-domain':
         specifier: workspace:*
         version: link:../../packages/guardmesh-orders-domain
@@ -336,6 +342,9 @@ importers:
       '@guardmesh/auth':
         specifier: workspace:*
         version: link:../../packages/guardmesh-auth
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-observability
       '@guardmesh/security-core':
         specifier: workspace:*
         version: link:../../packages/guardmesh-security-core

@@ -12,6 +12,7 @@ import {
 import type { AuthenticatedRequest } from "./auth.guard.js";
 import { AccessTokenGuard } from "./auth.guard.js";
 import { OrdersService } from "@guardmesh/orders-service";
+import { defaultMetrics } from "@guardmesh/observability";
 
 @Controller("orders")
 @UseGuards(AccessTokenGuard)
@@ -39,5 +40,19 @@ export class HealthController {
   @Get("live")
   public live() {
     return { status: "ok" };
+  }
+
+  @Get("ready")
+  public ready() {
+    return { status: "ok", service: "orders-api" };
+  }
+
+}
+
+@Controller("metrics")
+export class MetricsController {
+  @Get()
+  public metrics() {
+    return defaultMetrics.renderPrometheus();
   }
 }

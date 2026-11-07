@@ -13,6 +13,8 @@ describe("observability helpers", () => {
     counters.increment(guardMeshMetrics.authorizationDenied);
     counters.increment(guardMeshMetrics.authorizationDenied, 2);
     expect(counters.read(guardMeshMetrics.authorizationDenied)).toBe(3);
+    expect(counters.snapshot()).toEqual({ [guardMeshMetrics.authorizationDenied]: 3 });
+    expect(counters.renderPrometheus()).toBe(`${guardMeshMetrics.authorizationDenied} 3\n`);
   });
 
   it("ends spans on success and failure", async () => {

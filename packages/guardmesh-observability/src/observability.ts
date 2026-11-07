@@ -17,7 +17,19 @@ export class CounterRegistry {
   public read(name: string): number {
     return this.values.get(name) ?? 0;
   }
+
+  public snapshot(): Readonly<Record<string, number>> {
+    return Object.fromEntries(this.values);
+  }
+
+  public renderPrometheus(): string {
+    return `${[...this.values.entries()]
+      .map(([name, value]) => `${name} ${value}`)
+      .join("\n")}\n`;
+  }
 }
+
+export const defaultMetrics = new CounterRegistry();
 
 export type GuardMeshMetrics = Readonly<{
   authAccepted: string;

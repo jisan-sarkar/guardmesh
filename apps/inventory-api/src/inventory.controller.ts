@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 
 import { InventoryService } from "@guardmesh/inventory-service";
+import { defaultMetrics } from "@guardmesh/observability";
 
 import { AccessTokenGuard, type AuthenticatedRequest } from "./auth.guard.js";
 
@@ -37,5 +38,19 @@ export class HealthController {
   @Get("live")
   public live() {
     return { status: "ok" };
+  }
+
+  @Get("ready")
+  public ready() {
+    return { status: "ok", service: "inventory-api" };
+  }
+
+}
+
+@Controller("metrics")
+export class MetricsController {
+  @Get()
+  public metrics() {
+    return defaultMetrics.renderPrometheus();
   }
 }

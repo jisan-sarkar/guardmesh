@@ -7,7 +7,7 @@ import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/policy";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
 import { AccessTokenGuard } from "./auth.guard.js";
-import { HealthController, InventoryController } from "./inventory.controller.js";
+import { HealthController, InventoryController, MetricsController } from "./inventory.controller.js";
 
 const policyToken = "POLICY_ADAPTER";
 const actorDirectoryToken = "ACTOR_DIRECTORY";
@@ -23,7 +23,7 @@ function inventoryStateFromEnvironment(): InventoryState {
 }
 
 @Module({
-  controllers: [InventoryController, HealthController],
+  controllers: [InventoryController, HealthController, MetricsController],
   providers: [
     {
       provide: policyToken,
