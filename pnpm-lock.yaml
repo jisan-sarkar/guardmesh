@@ -252,6 +252,46 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12(@types/node@24.19.2)(vite@8.3.6(@types/node@24.19.2))
 
+  apps/security-api:
+    dependencies:
+      '@guardmesh/auth':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-auth
+      '@guardmesh/security-core':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-security-core
+      '@guardmesh/security-service':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-security-service
+      '@nestjs/common':
+        specifier: ^11.1.9
+        version: 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.1.9
+        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-fastify':
+        specifier: ^11.1.9
+        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      fastify:
+        specifier: ^5.6.1
+        version: 5.12.8
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.19.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.12
+        version: 4.1.12(@types/node@24.19.2)(vite@8.3.6(@types/node@24.19.2))
+
   packages/guardmesh-auth:
     dependencies:
       jose:
@@ -440,6 +480,47 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.19.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.12
+        version: 4.1.12(@types/node@24.19.2)(vite@8.3.6(@types/node@24.19.2))
+
+  packages/guardmesh-security-core:
+    dependencies:
+      zod:
+        specifier: ^4.1.12
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.19.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.12
+        version: 4.1.12(@types/node@24.19.2)(vite@8.3.6(@types/node@24.19.2))
+
+  packages/guardmesh-security-service:
+    dependencies:
+      '@guardmesh/security-core':
+        specifier: workspace:*
+        version: link:../guardmesh-security-core
+      kysely:
+        specifier: ^0.28.8
+        version: 0.28.19
+      pg:
+        specifier: ^8.16.3
+        version: 8.23.1
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.19.2
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.23.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
