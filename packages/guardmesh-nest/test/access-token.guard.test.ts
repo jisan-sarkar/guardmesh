@@ -8,9 +8,15 @@ function contextFor(authorization?: string): ExecutionContext {
   return { switchToHttp: () => ({ getRequest: () => request }) } as unknown as ExecutionContext;
 }
 
+function guardWithDependencies(verifyToken: unknown, actorDirectory: unknown): GuardMeshAccessTokenGuard {
+  const guard = new GuardMeshAccessTokenGuard();
+  Object.assign(guard as unknown as Record<string, unknown>, { verifyToken, actorDirectory });
+  return guard;
+}
+
 describe("shared GuardMesh NestJS access-token adapter", () => {
   it("rejects missing credentials with the shared 401 behavior", async () => {
-    const guard = new GuardMeshAccessTokenGuard(vi.fn(), { findBySubject: vi.fn() });
+    const guard = guardWithDependencies(vi.fn(), { findBySubject: vi.fn() });
     await expect(guard.canActivate(contextFor())).rejects.toMatchObject({ status: 401 });
   });
 
@@ -23,7 +29,7 @@ describe("shared GuardMesh NestJS access-token adapter", () => {
       scopes: ["inventory.catalog.read"],
     });
     const context = contextFor("Bearer service-token");
-    const guard = new GuardMeshAccessTokenGuard(verify, directory);
+    const guard = guardWithDependencies(verify, directory);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect((context.switchToHttp().getRequest() as { actor?: GuardMeshActor }).actor).toEqual(actor);
@@ -31,7 +37,7 @@ describe("shared GuardMesh NestJS access-token adapter", () => {
   });
 
   it("fails closed when verification or actor resolution fails", async () => {
-    const guard = new GuardMeshAccessTokenGuard(vi.fn().mockRejectedValue(new Error("bad token")), { findBySubject: vi.fn() });
+    const guard = guardWithDependencies(vi.fn().mockRejectedValue(new Error("bad token")), { findBySubject: vi.fn() });
     await expect(guard.canActivate(contextFor("Bearer invalid"))).rejects.toMatchObject({ status: 401 });
   });
 });

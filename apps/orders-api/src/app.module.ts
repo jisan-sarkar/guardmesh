@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { createAccessTokenVerifier } from "@guardmesh/auth";
 import type { OrderRepository } from "@guardmesh/orders-domain";
-import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/nest";
+import { GuardMeshAccessTokenGuard, OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/nest";
 import { OrdersService, PostgresOrderRepository, createOrdersDatabase } from "@guardmesh/orders-service";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
@@ -57,7 +57,11 @@ const policyToken = "POLICY_ADAPTER";
         ),
       inject: [repositoryToken, policyToken],
     },
-    AccessTokenGuard,
+    {
+      provide: AccessTokenGuard,
+      useFactory: GuardMeshAccessTokenGuard.create,
+      inject: [ORDERS_TOKEN_VERIFIER, ORDERS_ACTOR_DIRECTORY],
+    },
   ],
 })
 export class AppModule {}

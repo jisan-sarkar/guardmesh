@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
 import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
@@ -32,12 +32,18 @@ export type GuardMeshAuthenticatedRequest = {
 
 @Injectable()
 export class GuardMeshAccessTokenGuard implements CanActivate {
-  public constructor(
-    @Inject(GUARDMESH_TOKEN_VERIFIER)
-    private readonly verifyToken: GuardMeshTokenVerifier,
-    @Inject(GUARDMESH_ACTOR_DIRECTORY)
-    private readonly actorDirectory: GuardMeshActorDirectory,
-  ) {}
+  private verifyToken!: GuardMeshTokenVerifier;
+  private actorDirectory!: GuardMeshActorDirectory;
+
+  public static create(
+    verifyToken: GuardMeshTokenVerifier,
+    actorDirectory: GuardMeshActorDirectory,
+  ): GuardMeshAccessTokenGuard {
+    const guard = new GuardMeshAccessTokenGuard();
+    guard.verifyToken = verifyToken;
+    guard.actorDirectory = actorDirectory;
+    return guard;
+  }
 
   public async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<GuardMeshAuthenticatedRequest>();

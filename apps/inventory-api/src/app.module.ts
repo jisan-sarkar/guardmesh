@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { createAccessTokenVerifier } from "@guardmesh/auth";
 import type { InventoryState } from "@guardmesh/inventory-domain";
-import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/nest";
+import { GuardMeshAccessTokenGuard, OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/nest";
 import { InventoryService, InMemoryInventoryStore, PostgresInventoryStore, createInventoryDatabase } from "@guardmesh/inventory-service";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
@@ -55,7 +55,11 @@ function inventoryStateFromEnvironment(): InventoryState {
       },
       inject: [policyToken],
     },
-    AccessTokenGuard,
+    {
+      provide: AccessTokenGuard,
+      useFactory: GuardMeshAccessTokenGuard.create,
+      inject: [INVENTORY_TOKEN_VERIFIER, INVENTORY_ACTOR_DIRECTORY],
+    },
     InternalCatalogScopeGuard,
   ],
 })
