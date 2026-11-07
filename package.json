@@ -9,6 +9,7 @@
     "typecheck": "pnpm --recursive --if-present typecheck",
     "build": "pnpm --recursive --if-present build",
     "policy:test": "scripts/policy-test.sh",
+    "workflow:reconcile": "scripts/reconcile-workflow.sh",
     "compose:config": "docker compose --env-file .env.example config"
   },
   "engines": {

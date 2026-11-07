@@ -32,7 +32,14 @@ The first release will prove, with tests and documented experiments:
 3. Replay-safe order and inventory coordination with bounded retries and dead-letter handling.
 4. Structured, redacted security events and explainable alert rules.
 5. Correlated traces, metrics, and logs across synchronous and asynchronous work.
+
 6. Reproducible setup, failure experiments, and performance evidence.
+
+Operational checks are available through `/orders/health/live`, `/orders/health/ready`,
+`/inventory/health/live`, `/inventory/health/ready`, `/security/health/live`, and
+`/security/health/ready`. Each API also exposes an internal `/metrics` endpoint.
+Run `DATABASE_URL=... pnpm workflow:reconcile` to detect pending outboxes and
+inconsistent or stuck orders without mutating data.
 
 The restaurant workflow is only a replaceable demonstration domain. GuardMesh is not a restaurant, payment, or full POS product.
 
