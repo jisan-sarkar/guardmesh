@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
@@ -41,7 +41,8 @@ export class SecurityAuthGuard implements CanActivate {
 export class SecurityProducerGuard implements CanActivate {
   public async canActivate(context: ExecutionContext): Promise<boolean> {
     const actor = context.switchToHttp().getRequest<SecurityRequest>().actor;
-    if (!actor?.roles.includes("security-producer")) throw new UnauthorizedException();
+    if (!actor) throw new UnauthorizedException();
+    if (!actor.roles.includes("security-producer")) throw new ForbiddenException();
     return true;
   }
 }
@@ -50,7 +51,8 @@ export class SecurityProducerGuard implements CanActivate {
 export class SecurityOperatorGuard implements CanActivate {
   public async canActivate(context: ExecutionContext): Promise<boolean> {
     const actor = context.switchToHttp().getRequest<SecurityRequest>().actor;
-    if (!actor?.roles.includes("security-operator")) throw new UnauthorizedException();
+    if (!actor) throw new UnauthorizedException();
+    if (!actor.roles.includes("security-operator")) throw new ForbiddenException();
     return true;
   }
 }

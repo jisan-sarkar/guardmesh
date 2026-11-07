@@ -17,7 +17,8 @@ describe("security API guards", () => {
 
   it("separates producer and operator roles", async () => {
     await expect(new SecurityProducerGuard().canActivate(contextFor({ actorId: "p", roles: ["security-producer"] }))).resolves.toBe(true);
+    await expect(new SecurityProducerGuard().canActivate(contextFor({ actorId: "o", roles: ["security-operator"] }))).rejects.toMatchObject({ status: 403 });
     await expect(new SecurityOperatorGuard().canActivate(contextFor({ actorId: "o", roles: ["security-operator"] }))).resolves.toBe(true);
-    await expect(new SecurityOperatorGuard().canActivate(contextFor({ actorId: "p", roles: ["security-producer"] }))).rejects.toMatchObject({ status: 401 });
+    await expect(new SecurityOperatorGuard().canActivate(contextFor({ actorId: "p", roles: ["security-producer"] }))).rejects.toMatchObject({ status: 403 });
   });
 });
