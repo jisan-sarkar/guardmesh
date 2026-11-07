@@ -88,6 +88,8 @@ The browser demo completes the PKCE authorization flow and keeps access tokens i
 
 The internal inventory catalogue is restricted to the confidential `orders-service` client, the `inventory.catalog.read` scope, and the dedicated `inventory-reader` policy role. Its local secret and actor mapping are synthetic development credentials only.
 
+Backup/restore uses an explicit target for safety. Run `DATABASE_URL=... BACKUP_DIR=... scripts/backup-restore.sh backup`, then restore with `RESTORE_DATABASE_URL=... scripts/backup-restore.sh restore <dump-file>`. A backup includes the database dump, source commit, and non-secret realm, broker, policy, migration, and Compose configuration bundle.
+
 For recovery and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
 
 ## Engineering principles

@@ -10,7 +10,7 @@ All measurements must use synthetic identities/data and record the commit SHA, h
 4. **Duplicate delivery** — redeliver the same order event and verify one effective reservation.
 5. **Worker replay** — restart Inventory while processing and verify inbox/event deduplication.
 6. **Load baseline** — run `k6 run evaluation/k6/orders.js` with explicit `BASE_URL`, `ACCESS_TOKEN`, `RATE`, and `DURATION` values.
-7. **Backup/restore** — run `scripts/backup-restore.sh` against an isolated synthetic database and verify representative records after restore.
+7. **Backup/restore** — run `DATABASE_URL=... BACKUP_DIR=... scripts/backup-restore.sh backup`, restore the dump with `RESTORE_DATABASE_URL=... scripts/backup-restore.sh restore <dump-file>` into a clean isolated database, and verify representative order, reservation, outbox, and security-event records plus the configuration bundle.
 
 ## Evidence template
 
