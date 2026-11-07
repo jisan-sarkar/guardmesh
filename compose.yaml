@@ -96,8 +96,10 @@ services:
       OIDC_AUDIENCE: ${OIDC_AUDIENCE}
       OIDC_JWKS_URI: ${OIDC_JWKS_URI}
       ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
+      RABBITMQ_URL: ${RABBITMQ_URL}
     depends_on:
       postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
       keycloak: {condition: service_started}
 
   demo-web:

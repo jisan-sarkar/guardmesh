@@ -2,6 +2,7 @@ import type { Channel, ConsumeMessage, Options } from "amqplib";
 import amqp from "amqplib";
 
 export const workflowExchange = "guardmesh.events";
+export const securityExchange = "guardmesh.security";
 export const deadLetterExchange = "guardmesh.dlx";
 
 export const inventoryOrderTopology: QueueTopology = {
@@ -20,6 +21,14 @@ export const ordersStockTopology: QueueTopology = {
   deadLetterRoutingKey: "orders.stock-results.failed",
 };
 
+export const securityEventsTopology: QueueTopology = {
+  exchange: securityExchange,
+  queue: "security.events",
+  routingKey: "security.event.v1",
+  deadLetterExchange,
+  deadLetterRoutingKey: "security.events.failed",
+};
+
 export async function connectWorkflowBroker(url: string): Promise<{
   connection: amqp.ChannelModel;
   channel: amqp.Channel;
@@ -28,6 +37,7 @@ export async function connectWorkflowBroker(url: string): Promise<{
   const channel = await connection.createChannel();
   await configureTopology(channel, inventoryOrderTopology);
   await configureTopology(channel, ordersStockTopology);
+  await configureTopology(channel, securityEventsTopology);
   return { connection, channel };
 }
 
@@ -87,6 +97,18 @@ export class RabbitMqPublisher {
       throw new Error("broker write buffer is full");
     }
   }
+}
+
+let securityEventPublisher: ((event: Readonly<Record<string, unknown>>) => void) | undefined;
+
+export function configureSecurityEventPublisher(
+  publisher: (event: Readonly<Record<string, unknown>>) => void,
+): void {
+  securityEventPublisher = publisher;
+}
+
+export function publishSecurityEvent(event: Readonly<Record<string, unknown>>): void {
+  securityEventPublisher?.(event);
 }
 
 export type MessageHandler = (message: unknown, raw: ConsumeMessage) => Promise<void>;

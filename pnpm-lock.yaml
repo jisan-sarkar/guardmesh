@@ -342,6 +342,9 @@ importers:
       '@guardmesh/auth':
         specifier: workspace:*
         version: link:../../packages/guardmesh-auth
+      '@guardmesh/messaging':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-messaging
       '@guardmesh/observability':
         specifier: workspace:*
         version: link:../../packages/guardmesh-observability
@@ -458,6 +461,9 @@ importers:
       '@guardmesh/inventory-domain':
         specifier: workspace:*
         version: link:../guardmesh-inventory-domain
+      '@guardmesh/messaging':
+        specifier: workspace:*
+        version: link:../guardmesh-messaging
       '@guardmesh/policy':
         specifier: workspace:*
         version: link:../guardmesh-policy
@@ -540,6 +546,9 @@ importers:
       '@guardmesh/contracts':
         specifier: workspace:*
         version: link:../guardmesh-contracts
+      '@guardmesh/messaging':
+        specifier: workspace:*
+        version: link:../guardmesh-messaging
       '@guardmesh/orders-domain':
         specifier: workspace:*
         version: link:../guardmesh-orders-domain

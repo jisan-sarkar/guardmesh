@@ -9,6 +9,7 @@ import {
 import type { AuthorizationDecision } from "@guardmesh/contracts";
 import type { PolicyEnforcementAdapter } from "@guardmesh/policy";
 import type { InventoryStore } from "./store.js";
+import { publishSecurityEvent } from "@guardmesh/messaging";
 import { z } from "zod";
 
 const stockAdjustmentSchema = z.object({
@@ -37,6 +38,8 @@ export class InventoryService {
   public constructor(
     private readonly store: InventoryStore,
     private readonly policy: Pick<PolicyEnforcementAdapter, "authorize">,
+    private readonly eventIdFactory: EventIdFactory = () => crypto.randomUUID(),
+    private readonly clock: Clock = () => new Date().toISOString(),
   ) {}
 
   public async getItems(actor: InventoryActor): Promise<InventoryState["items"]> {
@@ -49,7 +52,24 @@ export class InventoryService {
       resourceId: actor.locationId,
       resourceLocationId: actor.locationId,
     });
-    if (!decision.allow) throw new InventoryForbiddenError(decision);
+    if (!decision.allow) {
+      publishSecurityEvent({
+        version: 1,
+        eventId: this.eventIdFactory(),
+        type: "AUTHORIZATION_DECISION",
+        occurredAt: this.clock(),
+        correlationId: actor.locationId,
+        actorId: actor.actorId,
+        action: "inventory.read",
+        outcome: "DENY",
+        resourceType: "inventory",
+        resourceId: actor.locationId,
+        locationId: actor.locationId,
+        reason: decision.reason,
+        metadata: { policyVersion: decision.policyVersion },
+      });
+      throw new InventoryForbiddenError(decision);
+    }
 
     return this.store.list(actor.locationId);
   }
@@ -77,9 +97,42 @@ export class InventoryService {
       resourceId: adjustment.sku,
       resourceLocationId: item.locationId,
     });
-    if (!decision.allow) throw new InventoryForbiddenError(decision);
+    if (!decision.allow) {
+      publishSecurityEvent({
+        version: 1,
+        eventId: this.eventIdFactory(),
+        type: "AUTHORIZATION_DECISION",
+        occurredAt: this.clock(),
+        correlationId: adjustment.sku,
+        actorId: actor.actorId,
+        action: "inventory.adjust",
+        outcome: "DENY",
+        resourceType: "inventory",
+        resourceId: adjustment.sku,
+        locationId: actor.locationId,
+        reason: decision.reason,
+        metadata: { policyVersion: decision.policyVersion },
+      });
+      throw new InventoryForbiddenError(decision);
+    }
 
-    return this.store.adjust(adjustment.sku, adjustment.locationId, adjustment.delta);
+    const result = await this.store.adjust(adjustment.sku, adjustment.locationId, adjustment.delta);
+    publishSecurityEvent({
+      version: 1,
+      eventId: this.eventIdFactory(),
+      type: "PRIVILEGED_ACTION",
+      occurredAt: this.clock(),
+      correlationId: adjustment.sku,
+      actorId: actor.actorId,
+      action: "inventory.adjust",
+      outcome: "ALLOW",
+      resourceType: "inventory",
+      resourceId: adjustment.sku,
+      locationId: actor.locationId,
+      reason: "inventory adjustment applied",
+      metadata: { delta: adjustment.delta, policyVersion: decision.policyVersion },
+    });
+    return result;
   }
 }
 

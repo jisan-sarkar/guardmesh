@@ -8,6 +8,7 @@ import {
   type OrderRepository,
 } from "@guardmesh/orders-domain";
 import type { PolicyEnforcementAdapter } from "@guardmesh/policy";
+import { publishSecurityEvent } from "@guardmesh/messaging";
 
 const createOrderInputSchema = z.object({
   requestFingerprint: z.string().min(1),
@@ -64,6 +65,21 @@ export class OrdersService {
     });
 
     if (!decision.allow) {
+      publishSecurityEvent({
+        version: 1,
+        eventId: this.eventIdFactory(),
+        type: "AUTHORIZATION_DECISION",
+        occurredAt: this.clock(),
+        correlationId: targetOrderId,
+        actorId: actor.actorId,
+        action: "order.create",
+        outcome: "DENY",
+        resourceType: "order",
+        resourceId: targetOrderId,
+        locationId: actor.locationId,
+        reason: decision.reason,
+        metadata: { policyVersion: decision.policyVersion },
+      });
       throw new OrderForbiddenError(decision);
     }
 
@@ -126,6 +142,21 @@ export class OrdersService {
     });
 
     if (!decision.allow) {
+      publishSecurityEvent({
+        version: 1,
+        eventId: this.eventIdFactory(),
+        type: "AUTHORIZATION_DECISION",
+        occurredAt: this.clock(),
+        correlationId: order.orderId,
+        actorId: actor.actorId,
+        action: "order.read",
+        outcome: "DENY",
+        resourceType: "order",
+        resourceId: order.orderId,
+        locationId: actor.locationId,
+        reason: decision.reason,
+        metadata: { policyVersion: decision.policyVersion },
+      });
       throw new OrderForbiddenError(decision);
     }
 
