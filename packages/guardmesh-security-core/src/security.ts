@@ -3,6 +3,13 @@ import { z } from "zod";
 const safeMetadataValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 const forbiddenKeyPattern = /(token|password|secret|authorization|credential|cookie|private.?key)/i;
 
+export class SecurityEventValidationError extends Error {
+  public constructor(message = "security event validation failed") {
+    super(message);
+    this.name = "SecurityEventValidationError";
+  }
+}
+
 export const securityEventSchema = z.object({
   version: z.literal(1),
   eventId: z.string().min(1),
@@ -41,10 +48,12 @@ export type SecurityAlert = Readonly<{
 }>;
 
 export function sanitizeSecurityEvent(input: unknown): SecurityEvent {
-  const parsed = securityEventSchema.parse(input);
+  const result = securityEventSchema.safeParse(input);
+  if (!result.success) throw new SecurityEventValidationError();
+  const parsed = result.data;
   for (const key of Object.keys(parsed.metadata)) {
     if (forbiddenKeyPattern.test(key)) {
-      throw new Error(`forbidden security metadata key: ${key}`);
+      throw new SecurityEventValidationError(`forbidden security metadata key: ${key}`);
     }
   }
   return parsed;

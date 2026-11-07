@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   InMemorySecurityEventStore,
   SecurityAlertEvaluator,
+  SecurityEventValidationError,
   sanitizeSecurityEvent,
 } from "../src/security.js";
 
@@ -28,7 +29,7 @@ describe("security events and alerts", () => {
   });
 
   it("rejects secrets in event metadata", () => {
-    expect(() => sanitizeSecurityEvent({ ...denial, metadata: { access_token: "secret" } })).toThrow();
+    expect(() => sanitizeSecurityEvent({ ...denial, metadata: { access_token: "secret" } })).toThrow(SecurityEventValidationError);
   });
 
   it("creates an alert when authorization denials cross the threshold", async () => {

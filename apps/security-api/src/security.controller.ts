@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 
+import { SecurityEventValidationError } from "@guardmesh/security-core";
 import { SecurityService } from "@guardmesh/security-service";
 import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
 import { SecurityAuthGuard, SecurityOperatorGuard, SecurityProducerGuard, type SecurityRequest } from "./auth.guard.js";
@@ -11,8 +12,13 @@ export class SecurityController {
 
   @Post("events")
   @UseGuards(SecurityProducerGuard)
-  public ingest(@Body() body: unknown) {
-    return this.security.ingest(body);
+  public async ingest(@Body() body: unknown) {
+    try {
+      return await this.security.ingest(body);
+    } catch (error) {
+      if (error instanceof SecurityEventValidationError) throw new BadRequestException("invalid security event");
+      throw error;
+    }
   }
 
   @Get("events")
