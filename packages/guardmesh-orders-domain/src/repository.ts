@@ -1,10 +1,19 @@
 import type { Order } from "./order.js";
 
+export type OrderOutboxEvent = Readonly<{
+  eventId: string;
+  eventType: string;
+  payload: Readonly<Record<string, unknown>>;
+  createdAt: string;
+}>;
+
 export interface OrderRepository {
   findById(orderId: string): Promise<Order | undefined>;
   findByActorAndFingerprint(actorId: string, requestFingerprint: string): Promise<Order | undefined>;
   insert(order: Order): Promise<void>;
   update(order: Order): Promise<void>;
+  insertWithOutbox?(order: Order, event: OrderOutboxEvent): Promise<void>;
+  applyStockOutcomeOnce?(eventId: string, input: unknown): Promise<Order | undefined>;
 }
 
 export class DuplicateOrderError extends Error {
@@ -48,5 +57,9 @@ export class InMemoryOrderRepository implements OrderRepository {
     }
 
     this.orders.set(order.orderId, order);
+  }
+
+  public async insertWithOutbox(order: Order): Promise<void> {
+    await this.insert(order);
   }
 }

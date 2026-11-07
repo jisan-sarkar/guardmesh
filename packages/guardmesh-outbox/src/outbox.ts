@@ -65,3 +65,67 @@ export class OutboxRelay {
     return { published, failed };
   }
 }
+import type { Pool } from "pg";
+
+
+export class PostgresOutboxRelay {
+  public constructor(
+    private readonly pool: Pool,
+    private readonly tableName: string,
+    private readonly publisher: EventPublisher,
+  ) {
+    if (!/^[a-z_]+$/u.test(tableName)) throw new Error("invalid outbox table name");
+  }
+
+  public async runOnce(limit: number): Promise<{ published: number; failed: number }> {
+    if (!Number.isInteger(limit) || limit <= 0) throw new Error("relay limit must be positive");
+    const client = await this.pool.connect();
+    let rows: Array<{ event_id: string; payload_json: unknown }> = [];
+    try {
+      await client.query("BEGIN");
+      const result = await client.query<{ event_id: string; payload_json: unknown }>(
+        `SELECT event_id, payload_json
+           FROM ${this.tableName}
+          WHERE published_at IS NULL
+          ORDER BY created_at
+          FOR UPDATE SKIP LOCKED
+          LIMIT $1`,
+        [limit],
+      );
+      rows = result.rows;
+      if (rows.length > 0) {
+        await client.query(
+          `UPDATE ${this.tableName}
+              SET attempts = attempts + 1
+            WHERE event_id = ANY($1::text[])`,
+          [rows.map((row) => row.event_id)],
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    let published = 0;
+    let failed = 0;
+    for (const row of rows) {
+      const payload = typeof row.payload_json === "string"
+        ? JSON.parse(row.payload_json) as Readonly<Record<string, unknown>>
+        : row.payload_json as Readonly<Record<string, unknown>>;
+      try {
+        await this.publisher.publish(payload);
+        await this.pool.query(
+          `UPDATE ${this.tableName} SET published_at = NOW() WHERE event_id = $1`,
+          [row.event_id],
+        );
+        published += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    return { published, failed };
+  }
+}

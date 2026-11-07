@@ -202,12 +202,21 @@ importers:
       '@guardmesh/auth':
         specifier: workspace:*
         version: link:../../packages/guardmesh-auth
+      '@guardmesh/events':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-events
       '@guardmesh/inventory-domain':
         specifier: workspace:*
         version: link:../../packages/guardmesh-inventory-domain
       '@guardmesh/inventory-service':
         specifier: workspace:*
         version: link:../../packages/guardmesh-inventory-service
+      '@guardmesh/messaging':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-messaging
+      '@guardmesh/outbox':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-outbox
       '@guardmesh/policy':
         specifier: workspace:*
         version: link:../../packages/guardmesh-policy
@@ -220,9 +229,15 @@ importers:
       '@nestjs/platform-fastify':
         specifier: ^11.1.9
         version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      amqplib:
+        specifier: ^0.10.8
+        version: 0.10.9
       fastify:
         specifier: 5.12.8
         version: 5.12.8
+      pg:
+        specifier: ^8.16.3
+        version: 8.23.1
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -230,9 +245,15 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@types/amqplib':
+        specifier: ^0.10.7
+        version: 0.10.8
       '@types/node':
         specifier: ^24.10.1
         version: 24.19.2
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.23.1
       tsx:
         specifier: ^4.20.6
         version: 4.23.15
@@ -248,12 +269,21 @@ importers:
       '@guardmesh/auth':
         specifier: workspace:*
         version: link:../../packages/guardmesh-auth
+      '@guardmesh/events':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-events
+      '@guardmesh/messaging':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-messaging
       '@guardmesh/orders-domain':
         specifier: workspace:*
         version: link:../../packages/guardmesh-orders-domain
       '@guardmesh/orders-service':
         specifier: workspace:*
         version: link:../../packages/guardmesh-orders-service
+      '@guardmesh/outbox':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-outbox
       '@guardmesh/policy':
         specifier: workspace:*
         version: link:../../packages/guardmesh-policy
@@ -266,9 +296,15 @@ importers:
       '@nestjs/platform-fastify':
         specifier: ^11.1.9
         version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      amqplib:
+        specifier: ^0.10.8
+        version: 0.10.9
       fastify:
         specifier: 5.12.8
         version: 5.12.8
+      pg:
+        specifier: ^8.16.3
+        version: 8.23.1
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -276,9 +312,15 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@types/amqplib':
+        specifier: ^0.10.7
+        version: 0.10.8
       '@types/node':
         specifier: ^24.10.1
         version: 24.19.2
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.23.1
       tsx:
         specifier: ^4.20.6
         version: 4.23.15
@@ -519,10 +561,17 @@ importers:
         version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@7.3.7(@types/node@24.19.2)(lightningcss@1.33.0)(tsx@4.23.15))
 
   packages/guardmesh-outbox:
+    dependencies:
+      pg:
+        specifier: ^8.16.3
+        version: 8.23.1
     devDependencies:
       '@types/node':
         specifier: ^24.10.1
         version: 24.19.2
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.23.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

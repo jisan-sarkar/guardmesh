@@ -2,6 +2,13 @@ import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
 
 import {
+  orderCreatedEventSchema,
+  stockReservationResultEventSchema,
+  type OrderCreatedEvent,
+  type StockReservationResultEvent,
+} from "@guardmesh/events";
+
+import {
   reservationLineSchema,
   reserveStockCommandSchema,
   type InventoryItem,
@@ -60,6 +67,19 @@ type InventoryDatabase = {
     items_json: unknown;
     result: "RESERVED" | "REJECTED";
     created_at: string;
+  };
+  inventory_inbox: {
+    event_id: string;
+    result_event_json: unknown;
+    processed_at: string | Date;
+  };
+  inventory_outbox: {
+    event_id: string;
+    event_type: string;
+    payload_json: unknown;
+    attempts: number;
+    published_at: string | Date | null;
+    created_at: string | Date;
   };
 };
 
@@ -177,6 +197,120 @@ export class PostgresInventoryStore implements InventoryStore {
         items: command.items,
         result,
       };
+    });
+  }
+
+  public async processOrderCreated(
+    input: unknown,
+    eventIdFactory: () => string,
+    clock: () => string,
+  ): Promise<StockReservationResultEvent> {
+    const event = orderCreatedEventSchema.parse(input);
+    return this.db.transaction().execute(async (transaction) => {
+      const prior = await transaction
+        .selectFrom("inventory_inbox")
+        .select("result_event_json")
+        .where("event_id", "=", event.eventId)
+        .executeTakeFirst();
+      if (prior) {
+        const parsed = typeof prior.result_event_json === "string"
+          ? JSON.parse(prior.result_event_json)
+          : prior.result_event_json;
+        return stockReservationResultEventSchema.parse(parsed);
+      }
+
+      const existing = await transaction
+        .selectFrom("reservations")
+        .selectAll()
+        .where("order_id", "=", event.payload.orderId)
+        .executeTakeFirst();
+      let result: "RESERVED" | "REJECTED";
+      if (existing) {
+        if (
+          existing.request_fingerprint !== event.payload.requestFingerprint ||
+          existing.location_id !== event.payload.locationId
+        ) {
+          throw new Error("conflicting reservation command for order");
+        }
+        result = existing.result;
+      } else {
+        const quantities = new Map<string, number>();
+        for (const line of event.payload.items) {
+          quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
+        }
+        const rows = [] as Array<{ row: InventoryDatabase["inventory_items"]; quantity: number }>;
+        for (const [sku, quantity] of [...quantities.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+          const row = await transaction
+            .selectFrom("inventory_items")
+            .selectAll()
+            .where("sku", "=", sku)
+            .where("location_id", "=", event.payload.locationId)
+            .forUpdate()
+            .executeTakeFirst();
+          if (!row) throw new Error(`unknown SKU or location: ${sku}`);
+          rows.push({ row, quantity });
+        }
+        result = rows.some(({ row, quantity }) => row.available < quantity)
+          ? "REJECTED"
+          : "RESERVED";
+        if (result === "RESERVED") {
+          for (const { row, quantity } of rows) {
+            await transaction
+              .updateTable("inventory_items")
+              .set({ available: row.available - quantity, version: row.version + 1 })
+              .where("sku", "=", row.sku)
+              .where("version", "=", row.version)
+              .executeTakeFirstOrThrow();
+          }
+        }
+        await transaction
+          .insertInto("reservations")
+          .values({
+            order_id: event.payload.orderId,
+            request_fingerprint: event.payload.requestFingerprint,
+            location_id: event.payload.locationId,
+            items_json: JSON.stringify(event.payload.items),
+            result,
+            created_at: clock(),
+          })
+          .execute();
+      }
+
+      const output = stockReservationResultEventSchema.parse({
+        version: 1,
+        eventId: eventIdFactory(),
+        type: "inventory.stock-reservation-result.v1",
+        occurredAt: clock(),
+        correlationId: event.correlationId,
+        causationId: event.eventId,
+        producer: "inventory-api",
+        payload: {
+          orderId: event.payload.orderId,
+          requestFingerprint: event.payload.requestFingerprint,
+          locationId: event.payload.locationId,
+          result,
+        },
+      });
+      await transaction
+        .insertInto("inventory_inbox")
+        .values({
+          event_id: event.eventId,
+          result_event_json: JSON.stringify(output),
+          processed_at: clock(),
+        })
+        .execute();
+      await transaction
+        .insertInto("inventory_outbox")
+        .values({
+          event_id: output.eventId,
+          event_type: output.type,
+          payload_json: JSON.stringify(output),
+          attempts: 0,
+          published_at: null,
+          created_at: output.occurredAt,
+        })
+        .execute();
+      return output;
     });
   }
 }

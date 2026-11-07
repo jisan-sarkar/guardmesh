@@ -1,4 +1,35 @@
 import type { Channel, ConsumeMessage, Options } from "amqplib";
+import amqp from "amqplib";
+
+export const workflowExchange = "guardmesh.events";
+export const deadLetterExchange = "guardmesh.dlx";
+
+export const inventoryOrderTopology: QueueTopology = {
+  exchange: workflowExchange,
+  queue: "inventory.orders",
+  routingKey: "orders.order-created.v1",
+  deadLetterExchange,
+  deadLetterRoutingKey: "inventory.orders.failed",
+};
+
+export const ordersStockTopology: QueueTopology = {
+  exchange: workflowExchange,
+  queue: "orders.stock-results",
+  routingKey: "inventory.stock-reservation-result.v1",
+  deadLetterExchange,
+  deadLetterRoutingKey: "orders.stock-results.failed",
+};
+
+export async function connectWorkflowBroker(url: string): Promise<{
+  connection: amqp.ChannelModel;
+  channel: amqp.Channel;
+}> {
+  const connection = await amqp.connect(url);
+  const channel = await connection.createChannel();
+  await configureTopology(channel, inventoryOrderTopology);
+  await configureTopology(channel, ordersStockTopology);
+  return { connection, channel };
+}
 
 export type QueueTopology = Readonly<{
   exchange: string;
@@ -19,6 +50,13 @@ export async function configureTopology(channel: Channel, topology: QueueTopolog
     },
   });
   await channel.bindQueue(topology.queue, topology.exchange, topology.routingKey);
+  const deadLetterQueue = `${topology.queue}.failed`;
+  await channel.assertQueue(deadLetterQueue, { durable: true });
+  await channel.bindQueue(
+    deadLetterQueue,
+    topology.deadLetterExchange,
+    topology.deadLetterRoutingKey,
+  );
 }
 
 export class RabbitMqPublisher {
@@ -33,6 +71,7 @@ export class RabbitMqPublisher {
     const correlationId = typeof event.correlationId === "string" ? event.correlationId : undefined;
     const options: Options.Publish = {
       persistent: true,
+      mandatory: true,
       contentType: "application/json",
       ...(eventId ? { messageId: eventId } : {}),
       ...(correlationId ? { correlationId } : {}),

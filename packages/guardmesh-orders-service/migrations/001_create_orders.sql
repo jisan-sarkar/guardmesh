@@ -11,3 +11,17 @@ CREATE TABLE orders (
 );
 
 CREATE INDEX orders_actor_location_idx ON orders (actor_id, location_id);
+
+CREATE TABLE orders_outbox (
+  event_id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  payload_json JSONB NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE orders_inbox (
+  event_id TEXT PRIMARY KEY,
+  received_at TIMESTAMPTZ NOT NULL
+);

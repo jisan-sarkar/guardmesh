@@ -55,6 +55,7 @@ const verifierToken = "TOKEN_VERIFIER";
           policy,
           randomUUID,
           () => new Date().toISOString(),
+          randomUUID,
         ),
       inject: [repositoryToken, policyToken],
     },

@@ -27,6 +27,7 @@ export type CreateOrderInput = Readonly<{
 
 export type OrderIdFactory = () => string;
 export type Clock = () => string;
+export type EventIdFactory = () => string;
 
 export class OrderForbiddenError extends Error {
   public constructor(public readonly decision: AuthorizationDecision) {
@@ -41,6 +42,7 @@ export class OrdersService {
     private readonly policy: Pick<PolicyEnforcementAdapter, "authorize">,
     private readonly orderIdFactory: OrderIdFactory,
     private readonly clock: Clock,
+    private readonly eventIdFactory: EventIdFactory = orderIdFactory,
   ) {}
 
   public async createOrder(actor: OrdersActor, input: unknown): Promise<Order> {
@@ -80,7 +82,30 @@ export class OrdersService {
       this.clock(),
     );
 
-    await this.repository.insert(order);
+    if (this.repository.insertWithOutbox) {
+      const eventId = this.eventIdFactory();
+      await this.repository.insertWithOutbox(order, {
+        eventId,
+        eventType: "orders.order-created.v1",
+        createdAt: order.createdAt,
+        payload: {
+          version: 1,
+          eventId,
+          type: "orders.order-created.v1",
+          occurredAt: order.createdAt,
+          correlationId: order.orderId,
+          producer: "orders-api",
+          payload: {
+            orderId: order.orderId,
+            requestFingerprint: order.requestFingerprint,
+            locationId: order.locationId,
+            items: order.items,
+          },
+        },
+      });
+    } else {
+      await this.repository.insert(order);
+    }
     return order;
   }
 

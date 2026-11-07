@@ -24,6 +24,11 @@ services:
     image: rabbitmq:4-management-alpine
     ports: ["${RABBITMQ_PORT:-5672}:5672", "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"]
     volumes: [guardmesh-rabbitmq:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
@@ -50,12 +55,14 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       OPA_POLICY_URL: ${OPA_POLICY_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
       OIDC_ISSUER: ${OIDC_ISSUER}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE}
       OIDC_JWKS_URI: ${OIDC_JWKS_URI}
       ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
     depends_on:
       postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
       opa: {condition: service_started}
       keycloak: {condition: service_started}
 
@@ -67,12 +74,14 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       OPA_POLICY_URL: ${OPA_POLICY_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
       OIDC_ISSUER: ${OIDC_ISSUER}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE}
       OIDC_JWKS_URI: ${OIDC_JWKS_URI}
       ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
     depends_on:
       postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
       opa: {condition: service_started}
       keycloak: {condition: service_started}
 

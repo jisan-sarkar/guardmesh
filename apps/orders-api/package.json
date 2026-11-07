@@ -11,18 +11,25 @@
   },
   "dependencies": {
     "@guardmesh/auth": "workspace:*",
+    "@guardmesh/events": "workspace:*",
+    "@guardmesh/messaging": "workspace:*",
     "@guardmesh/orders-domain": "workspace:*",
     "@guardmesh/orders-service": "workspace:*",
+    "@guardmesh/outbox": "workspace:*",
     "@guardmesh/policy": "workspace:*",
     "@nestjs/common": "^11.1.9",
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-fastify": "^11.1.9",
+    "amqplib": "^0.10.8",
     "fastify": "^5.12.2",
+    "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@types/amqplib": "^0.10.7",
+    "@types/pg": "^8.15.5",
     "typescript": "^5.9.3",
     "tsx": "^4.20.6",
     "vitest": "^4.1.12"

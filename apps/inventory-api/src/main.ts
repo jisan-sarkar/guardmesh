@@ -4,6 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 
 import { AppModule } from "./app.module.js";
+import { startInventoryWorkflow } from "./workflow.js";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -11,6 +12,7 @@ async function bootstrap(): Promise<void> {
     new FastifyAdapter(),
   );
   await app.listen({ host: "0.0.0.0", port: Number(process.env.PORT ?? 3001) });
+  void startInventoryWorkflow();
 }
 
 void bootstrap();
