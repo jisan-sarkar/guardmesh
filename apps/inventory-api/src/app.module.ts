@@ -6,12 +6,10 @@ import { InventoryService, InMemoryInventoryStore, PostgresInventoryStore, creat
 import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/policy";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
-import { AccessTokenGuard, InternalCatalogScopeGuard } from "./auth.guard.js";
+import { AccessTokenGuard, InternalCatalogScopeGuard, INVENTORY_ACTOR_DIRECTORY, INVENTORY_TOKEN_VERIFIER } from "./auth.guard.js";
 import { HealthController, InternalInventoryController, InventoryController, MetricsController } from "./inventory.controller.js";
 
 const policyToken = "POLICY_ADAPTER";
-const actorDirectoryToken = "ACTOR_DIRECTORY";
-const verifierToken = "TOKEN_VERIFIER";
 
 function inventoryStateFromEnvironment(): InventoryState {
   const raw = process.env.INVENTORY_STATE_JSON ?? '{"items":{},"reservations":{}}';
@@ -35,9 +33,9 @@ function inventoryStateFromEnvironment(): InventoryState {
         );
       },
     },
-    { provide: actorDirectoryToken, useFactory: actorDirectoryFromEnvironment },
+    { provide: INVENTORY_ACTOR_DIRECTORY, useFactory: actorDirectoryFromEnvironment },
     {
-      provide: verifierToken,
+      provide: INVENTORY_TOKEN_VERIFIER,
       useFactory: () => {
         const issuer = process.env.OIDC_ISSUER;
         const audience = process.env.OIDC_AUDIENCE;
@@ -57,14 +55,7 @@ function inventoryStateFromEnvironment(): InventoryState {
       },
       inject: [policyToken],
     },
-    {
-      provide: AccessTokenGuard,
-      useFactory: (
-        verifyToken: ReturnType<typeof createAccessTokenVerifier>,
-        actorDirectory: ReturnType<typeof actorDirectoryFromEnvironment>,
-      ) => new AccessTokenGuard(verifyToken, actorDirectory),
-      inject: [verifierToken, actorDirectoryToken],
-    },
+    AccessTokenGuard,
     InternalCatalogScopeGuard,
   ],
 })

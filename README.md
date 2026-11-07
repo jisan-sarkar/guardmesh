@@ -86,7 +86,7 @@ Health endpoints are available through the gateway at `/api/orders/health/live`,
 
 The browser demo completes the PKCE authorization flow and keeps access tokens in memory. The imported local users use the password shown in `.env.example`; change all credentials before using any shared environment.
 
-The internal inventory catalogue is restricted to the confidential `orders-service` client, the `inventory.catalog.read` scope, and the dedicated `inventory-reader` policy role. Its local secret and actor mapping are synthetic development credentials only.
+The internal inventory catalogue is available at `/api/inventory/internal/catalogue` only to the confidential `orders-service` client, the `inventory.catalog.read` scope, and the dedicated `inventory-reader` policy role. Its local secret and actor mapping are synthetic development credentials only.
 
 Backup/restore uses an explicit target for safety. Run `DATABASE_URL=... BACKUP_DIR=... scripts/backup-restore.sh backup`, then restore with `RESTORE_DATABASE_URL=... scripts/backup-restore.sh restore <dump-file>`. A backup includes the database dump, source commit, and non-secret realm, broker, policy, migration, and Compose configuration bundle.
 

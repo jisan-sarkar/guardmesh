@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Inject, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 
 import { SecurityEventValidationError } from "@guardmesh/security-core";
 import { SecurityService } from "@guardmesh/security-service";
@@ -8,7 +8,7 @@ import { SecurityAuthGuard, SecurityOperatorGuard, SecurityProducerGuard, type S
 @Controller("security")
 @UseGuards(SecurityAuthGuard)
 export class SecurityController {
-  public constructor(private readonly security: SecurityService) {}
+  public constructor(@Inject(SecurityService) private readonly security: SecurityService) {}
 
   @Post("events")
   @UseGuards(SecurityProducerGuard)

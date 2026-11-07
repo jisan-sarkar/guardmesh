@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
@@ -6,6 +6,8 @@ import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 import type { ActorDirectory } from "./actor-directory.js";
 
 type TokenVerifier = (token: string) => Promise<VerifiedAccessToken>;
+export const INVENTORY_TOKEN_VERIFIER = "TOKEN_VERIFIER";
+export const INVENTORY_ACTOR_DIRECTORY = "ACTOR_DIRECTORY";
 
 export type AuthenticatedRequest = FastifyRequest & {
   actor?: Awaited<ReturnType<ActorDirectory["findBySubject"]>>;
@@ -15,7 +17,9 @@ export type AuthenticatedRequest = FastifyRequest & {
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
   public constructor(
+    @Inject(INVENTORY_TOKEN_VERIFIER)
     private readonly verifyToken: TokenVerifier,
+    @Inject(INVENTORY_ACTOR_DIRECTORY)
     private readonly actorDirectory: ActorDirectory,
   ) {}
 

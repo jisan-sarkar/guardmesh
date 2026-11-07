@@ -5,6 +5,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Inject,
   Headers,
   NotFoundException,
   Param,
@@ -25,7 +26,7 @@ import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
 @Controller("orders")
 @UseGuards(AccessTokenGuard)
 export class OrdersController {
-  public constructor(private readonly orders: OrdersService) {}
+  public constructor(@Inject(OrdersService) private readonly orders: OrdersService) {}
 
   @Post()
   public async create(

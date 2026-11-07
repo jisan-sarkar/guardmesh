@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Inject,
   Param,
   Post,
   Req,
@@ -23,7 +24,7 @@ import { AccessTokenGuard, InternalCatalogScopeGuard, type AuthenticatedRequest 
 @Controller("inventory")
 @UseGuards(AccessTokenGuard)
 export class InventoryController {
-  public constructor(private readonly inventory: InventoryService) {}
+  public constructor(@Inject(InventoryService) private readonly inventory: InventoryService) {}
 
   @Get()
   public list(@Req() request: AuthenticatedRequest) {
@@ -51,15 +52,21 @@ export class InventoryController {
   }
 }
 
-@Controller("internal/inventory")
+@Controller("inventory/internal")
 @UseGuards(AccessTokenGuard, InternalCatalogScopeGuard)
 export class InternalInventoryController {
-  public constructor(private readonly inventory: InventoryService) {}
+  public constructor(@Inject(InventoryService) private readonly inventory: InventoryService) {}
 
   @Get("catalogue")
-  public catalogue(@Req() request: AuthenticatedRequest) {
+  public async catalogue(@Req() request: AuthenticatedRequest) {
     if (!request.actor) throw new ForbiddenException();
-    return this.inventory.getCatalogue(request.actor);
+    try {
+      return await this.inventory.getCatalogue(request.actor);
+    } catch (error) {
+      if (error instanceof InventoryForbiddenError) throw new ForbiddenException("access denied");
+      if (error instanceof PolicyDecisionError) throw new ServiceUnavailableException("authorization policy unavailable");
+      throw error;
+    }
   }
 }
 

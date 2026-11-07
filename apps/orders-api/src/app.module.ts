@@ -7,13 +7,11 @@ import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/policy";
 import { OrdersService, PostgresOrderRepository, createOrdersDatabase } from "@guardmesh/orders-service";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
-import { AccessTokenGuard } from "./auth.guard.js";
+import { AccessTokenGuard, ORDERS_ACTOR_DIRECTORY, ORDERS_TOKEN_VERIFIER } from "./auth.guard.js";
 import { HealthController, MetricsController, OrdersController } from "./orders.controller.js";
 
 const repositoryToken = "ORDERS_REPOSITORY";
 const policyToken = "POLICY_ADAPTER";
-const actorDirectoryToken = "ACTOR_DIRECTORY";
-const verifierToken = "TOKEN_VERIFIER";
 
 @Module({
   controllers: [OrdersController, HealthController, MetricsController],
@@ -36,9 +34,9 @@ const verifierToken = "TOKEN_VERIFIER";
         );
       },
     },
-    { provide: actorDirectoryToken, useFactory: actorDirectoryFromEnvironment },
+    { provide: ORDERS_ACTOR_DIRECTORY, useFactory: actorDirectoryFromEnvironment },
     {
-      provide: verifierToken,
+      provide: ORDERS_TOKEN_VERIFIER,
       useFactory: () => {
         const issuer = process.env.OIDC_ISSUER;
         const audience = process.env.OIDC_AUDIENCE;
@@ -59,12 +57,7 @@ const verifierToken = "TOKEN_VERIFIER";
         ),
       inject: [repositoryToken, policyToken],
     },
-    {
-      provide: AccessTokenGuard,
-      useFactory: (verifyToken: ReturnType<typeof createAccessTokenVerifier>, actorDirectory: ReturnType<typeof actorDirectoryFromEnvironment>) =>
-        new AccessTokenGuard(verifyToken, actorDirectory),
-      inject: [verifierToken, actorDirectoryToken],
-    },
+    AccessTokenGuard,
   ],
 })
 export class AppModule {}
