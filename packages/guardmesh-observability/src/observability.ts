@@ -31,6 +31,20 @@ export class CounterRegistry {
 
 export const defaultMetrics = new CounterRegistry();
 
+export class ReadinessState {
+  private ready = false;
+
+  public markReady(): void {
+    this.ready = true;
+  }
+
+  public status(service: string): Readonly<{ status: "ok" | "starting"; service: string }> {
+    return { status: this.ready ? "ok" : "starting", service };
+  }
+}
+
+export const defaultReadiness = new ReadinessState();
+
 export type GuardMeshMetrics = Readonly<{
   authAccepted: string;
   authRejected: string;

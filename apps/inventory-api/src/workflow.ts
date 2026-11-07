@@ -1,5 +1,6 @@
 import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
 import { PostgresOutboxRelay } from "@guardmesh/outbox";
+import { defaultReadiness } from "@guardmesh/observability";
 import pg from "pg";
 
 import {
@@ -49,6 +50,7 @@ export async function startInventoryWorkflow(): Promise<void> {
         () => new Date().toISOString(),
       );
     });
+    defaultReadiness.markReady();
 
     const tick = async () => {
       try {

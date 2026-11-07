@@ -1,6 +1,7 @@
 import { parseStockReservationResultEvent } from "@guardmesh/events";
 import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
 import { PostgresOutboxRelay } from "@guardmesh/outbox";
+import { defaultReadiness } from "@guardmesh/observability";
 import pg from "pg";
 
 import { createOrdersDatabase, PostgresOrderRepository } from "@guardmesh/orders-service";
@@ -44,6 +45,7 @@ export async function startOrdersWorkflow(): Promise<void> {
       if (!repository.applyStockOutcomeOnce) throw new Error("orders repository lacks inbox support");
       await repository.applyStockOutcomeOnce(event.eventId, event);
     });
+    defaultReadiness.markReady();
 
     const tick = async () => {
       try {

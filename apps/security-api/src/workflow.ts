@@ -1,5 +1,6 @@
 import { connectWorkflowBroker, consumeWithAck } from "@guardmesh/messaging";
 import { SecurityService } from "@guardmesh/security-service";
+import { defaultReadiness } from "@guardmesh/observability";
 
 export async function startSecurityWorkflow(security: SecurityService): Promise<void> {
   const brokerUrl = process.env.RABBITMQ_URL;
@@ -10,6 +11,7 @@ export async function startSecurityWorkflow(security: SecurityService): Promise<
     await consumeWithAck(broker.channel, "security.events", async (message) => {
       await security.ingest(message);
     });
+    defaultReadiness.markReady();
   } catch (error) {
     console.error("security workflow is unavailable", error);
     setTimeout(() => void startSecurityWorkflow(security), 2_000).unref();

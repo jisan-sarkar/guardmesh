@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 
 import { SecurityService } from "@guardmesh/security-service";
-import { defaultMetrics } from "@guardmesh/observability";
+import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
 import { SecurityAuthGuard, SecurityOperatorGuard, SecurityProducerGuard, type SecurityRequest } from "./auth.guard.js";
 
 @Controller("security")
@@ -43,7 +43,7 @@ export class HealthController {
 
   @Get("ready")
   public ready() {
-    return { status: "ok", service: "security-api" };
+    return defaultReadiness.status("security-api");
   }
 
 }

@@ -12,7 +12,7 @@ import {
 import type { AuthenticatedRequest } from "./auth.guard.js";
 import { AccessTokenGuard } from "./auth.guard.js";
 import { OrdersService } from "@guardmesh/orders-service";
-import { defaultMetrics } from "@guardmesh/observability";
+import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
 
 @Controller("orders")
 @UseGuards(AccessTokenGuard)
@@ -44,7 +44,7 @@ export class HealthController {
 
   @Get("ready")
   public ready() {
-    return { status: "ok", service: "orders-api" };
+    return defaultReadiness.status("orders-api");
   }
 
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CounterRegistry, getOrCreateCorrelationId, guardMeshMetrics, withSpan } from "../src/observability.js";
+import { CounterRegistry, getOrCreateCorrelationId, guardMeshMetrics, ReadinessState, withSpan } from "../src/observability.js";
 
 describe("observability helpers", () => {
   it("preserves safe correlation IDs and replaces invalid ones", () => {
@@ -26,5 +26,12 @@ describe("observability helpers", () => {
 
     await expect(withSpan(tracer, "test", {}, async () => "ok")).resolves.toBe("ok");
     await expect(withSpan(tracer, "test", {}, async () => { throw new Error("failed"); })).rejects.toThrow("failed");
+  });
+
+  it("starts unready and becomes ready explicitly", () => {
+    const readiness = new ReadinessState();
+    expect(readiness.status("orders-api")).toEqual({ status: "starting", service: "orders-api" });
+    readiness.markReady();
+    expect(readiness.status("orders-api")).toEqual({ status: "ok", service: "orders-api" });
   });
 });

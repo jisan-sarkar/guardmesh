@@ -10,7 +10,7 @@ import {
 } from "@nestjs/common";
 
 import { InventoryService } from "@guardmesh/inventory-service";
-import { defaultMetrics } from "@guardmesh/observability";
+import { defaultMetrics, defaultReadiness } from "@guardmesh/observability";
 
 import { AccessTokenGuard, InternalCatalogScopeGuard, type AuthenticatedRequest } from "./auth.guard.js";
 
@@ -55,7 +55,7 @@ export class HealthController {
 
   @Get("ready")
   public ready() {
-    return { status: "ok", service: "inventory-api" };
+    return defaultReadiness.status("inventory-api");
   }
 
 }
