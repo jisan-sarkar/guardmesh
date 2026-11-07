@@ -2,8 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { createAccessTokenVerifier } from "@guardmesh/auth";
 import type { InventoryState } from "@guardmesh/inventory-domain";
+import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/nest";
 import { InventoryService, InMemoryInventoryStore, PostgresInventoryStore, createInventoryDatabase } from "@guardmesh/inventory-service";
-import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/policy";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";
 import { AccessTokenGuard, InternalCatalogScopeGuard, INVENTORY_ACTOR_DIRECTORY, INVENTORY_TOKEN_VERIFIER } from "./auth.guard.js";

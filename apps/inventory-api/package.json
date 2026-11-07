@@ -16,6 +16,7 @@
     "@guardmesh/inventory-domain": "workspace:*",
     "@guardmesh/inventory-service": "workspace:*",
     "@guardmesh/messaging": "workspace:*",
+    "@guardmesh/nest": "workspace:*",
     "@guardmesh/observability": "workspace:*",
     "@guardmesh/outbox": "workspace:*",
     "@guardmesh/policy": "workspace:*",

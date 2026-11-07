@@ -218,6 +218,9 @@ importers:
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../../packages/guardmesh-messaging
+      '@guardmesh/nest':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-nest
       '@guardmesh/observability':
         specifier: workspace:*
         version: link:../../packages/guardmesh-observability
@@ -291,6 +294,9 @@ importers:
       '@guardmesh/messaging':
         specifier: workspace:*
         version: link:../../packages/guardmesh-messaging
+      '@guardmesh/nest':
+        specifier: workspace:*
+        version: link:../../packages/guardmesh-nest
       '@guardmesh/observability':
         specifier: workspace:*
         version: link:../../packages/guardmesh-observability
@@ -552,6 +558,31 @@ importers:
       '@types/amqplib':
         specifier: ^0.10.7
         version: 0.10.8
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.19.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.12
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@7.3.7(@types/node@24.19.2)(lightningcss@1.33.0)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/guardmesh-nest:
+    dependencies:
+      '@guardmesh/auth':
+        specifier: workspace:*
+        version: link:../guardmesh-auth
+      '@guardmesh/observability':
+        specifier: workspace:*
+        version: link:../guardmesh-observability
+      '@guardmesh/policy':
+        specifier: workspace:*
+        version: link:../guardmesh-policy
+      '@nestjs/common':
+        specifier: ^11.1.9
+        version: 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)
+    devDependencies:
       '@types/node':
         specifier: ^24.10.1
         version: 24.19.2

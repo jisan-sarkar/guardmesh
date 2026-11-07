@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { createAccessTokenVerifier } from "@guardmesh/auth";
 import type { OrderRepository } from "@guardmesh/orders-domain";
-import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/policy";
+import { OpaPolicyClient, PolicyEnforcementAdapter } from "@guardmesh/nest";
 import { OrdersService, PostgresOrderRepository, createOrdersDatabase } from "@guardmesh/orders-service";
 
 import { actorDirectoryFromEnvironment } from "./actor-directory.js";

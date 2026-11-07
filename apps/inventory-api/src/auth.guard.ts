@@ -1,52 +1,19 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 
 import type { VerifiedAccessToken } from "@guardmesh/auth";
-import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
+import { GuardMeshAccessTokenGuard, GUARDMESH_ACTOR_DIRECTORY, GUARDMESH_TOKEN_VERIFIER, type GuardMeshAuthenticatedRequest } from "@guardmesh/nest";
 import type { ActorDirectory } from "./actor-directory.js";
 
-type TokenVerifier = (token: string) => Promise<VerifiedAccessToken>;
-export const INVENTORY_TOKEN_VERIFIER = "TOKEN_VERIFIER";
-export const INVENTORY_ACTOR_DIRECTORY = "ACTOR_DIRECTORY";
+export const INVENTORY_TOKEN_VERIFIER = GUARDMESH_TOKEN_VERIFIER;
+export const INVENTORY_ACTOR_DIRECTORY = GUARDMESH_ACTOR_DIRECTORY;
 
-export type AuthenticatedRequest = FastifyRequest & {
+export type AuthenticatedRequest = FastifyRequest & GuardMeshAuthenticatedRequest & {
   actor?: Awaited<ReturnType<ActorDirectory["findBySubject"]>>;
   accessToken?: VerifiedAccessToken;
 };
 
-@Injectable()
-export class AccessTokenGuard implements CanActivate {
-  public constructor(
-    @Inject(INVENTORY_TOKEN_VERIFIER)
-    private readonly verifyToken: TokenVerifier,
-    @Inject(INVENTORY_ACTOR_DIRECTORY)
-    private readonly actorDirectory: ActorDirectory,
-  ) {}
-
-  public async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const header = request.headers.authorization;
-    const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
-    if (!token) {
-      defaultMetrics.increment(guardMeshMetrics.authRejected);
-      throw new UnauthorizedException();
-    }
-
-    try {
-      const verified = await this.verifyToken(token);
-      const actor = await this.actorDirectory.findBySubject(verified.subject)
-        ?? (verified.clientId ? await this.actorDirectory.findBySubject(verified.clientId) : undefined);
-      if (!actor) throw new UnauthorizedException();
-      request.actor = actor;
-      request.accessToken = verified;
-      defaultMetrics.increment(guardMeshMetrics.authAccepted);
-      return true;
-    } catch {
-      defaultMetrics.increment(guardMeshMetrics.authRejected);
-      throw new UnauthorizedException();
-    }
-  }
-}
+export const AccessTokenGuard = GuardMeshAccessTokenGuard;
 
 @Injectable()
 export class InternalCatalogScopeGuard implements CanActivate {

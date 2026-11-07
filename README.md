@@ -13,7 +13,7 @@ GuardMesh is a working reference implementation. It includes shared authenticati
 ## Planned architecture
 
 - Keycloak for OIDC identity and token issuance
-- NestJS services with a shared GuardMesh enforcement adapter
+- NestJS services with the shared `@guardmesh/nest` GuardMesh enforcement adapter
 - Open Policy Agent (OPA) and Rego for resource-aware authorization
 - Traefik for ingress and baseline rate limiting
 - PostgreSQL with service-owned data and transactional outbox/inbox patterns
@@ -93,7 +93,7 @@ Backup/restore uses an explicit target for safety. Run `DATABASE_URL=... BACKUP_
 
 Generated OpenAPI JSON is opt-in for local contract inspection. Set `ENABLE_API_DOCS=true` before starting Compose, then use `/api/orders/docs/openapi.json`, `/api/inventory/docs/openapi.json`, or `/api/security/docs/openapi.json`. Documentation routes remain disabled in production and by default.
 
-For recovery, security evidence, and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/security/verification-matrix.md`](docs/security/verification-matrix.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
+For recovery, security evidence, and performance evidence, see [`evaluation/scenarios.md`](evaluation/scenarios.md), [`docs/security/adapter-contract.md`](docs/security/adapter-contract.md), [`docs/security/verification-matrix.md`](docs/security/verification-matrix.md), [`docs/release-checklist.md`](docs/release-checklist.md), and the scripts under `scripts/`.
 
 ## Engineering principles
 

@@ -49,3 +49,11 @@ The matrix intentionally records unresolved release work rather than hiding it:
 
 Until those items have evidence, GuardMesh remains a local reference implementation
 and must not be described as production-ready.
+
+## GuardMesh-specific acceptance evidence
+
+| Requirement | Evidence | Status |
+| --- | --- | --- |
+| F-26 / AT-45 shared NestJS adapter | `packages/guardmesh-nest` is consumed by Orders and Inventory; shared adapter tests cover user and machine identities plus fail-closed errors. | Verified for the HTTP authentication boundary; service-specific OPA/resource tests remain intentionally local. |
+| F-27 / AT-46 reproducible migrations and topology | Fresh Compose PostgreSQL initialization, migration readiness checks, RabbitMQ definitions, OPA tests, and `pnpm install --frozen-lockfile` pass. | Verified for the local single-node profile. |
+| F-28 / AT-41 browser session architecture | PKCE, state/nonce validation, in-memory browser tokens, and the non-production HTTP limitation are documented. | Partial; deployment TLS/private-management and Playwright evidence remain open. |
