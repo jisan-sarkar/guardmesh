@@ -6,7 +6,7 @@ It demonstrates how to combine standard identity, service-side authorization, re
 
 ## Status
 
-**Phase implementation complete on `dev`; local verification is automated.**
+**Current status:** local reference implementation on `dev`; core verification is automated.
 
 GuardMesh is a working reference implementation. It includes shared authentication and authorization code, three service APIs, replay-safe domain logic, event and outbox primitives, security telemetry, local infrastructure, and repeatable evaluation scenarios. It is not a production deployment; production readiness still requires environment-specific security, capacity, and operations review.
 
@@ -31,7 +31,7 @@ The first release will prove, with tests and documented experiments:
 2. Fail-closed behavior when policy decisions are unavailable or invalid.
 3. Replay-safe order and inventory coordination with bounded retries and dead-letter handling.
 4. Structured, redacted security events and explainable alert rules.
-5. Correlated traces, metrics, and logs across synchronous and asynchronous work.
+5. Opt-in OTLP telemetry for service HTTP work plus application metrics; cross-service trace correlation remains an evaluation item.
 
 To enable the optional telemetry stack, set `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` in `.env` and run `docker compose --profile observability --env-file .env up --build`. Jaeger is available at `http://localhost:16686`; telemetry export is opt-in so the core profile does not require the collector.
 
@@ -47,7 +47,7 @@ The restaurant workflow is only a replaceable demonstration domain. GuardMesh is
 
 ## Current development phase
 
-All planned implementation phases are complete on `dev`. The public repository intentionally excludes the private project and development-plan documents.
+The core local implementation is on `dev`. The public repository intentionally excludes the private project and development-plan documents. Production deployment hardening, full acceptance-test automation, load evidence, and generated API-contract publication remain separate release activities.
 
 ## Local verification
 
@@ -73,7 +73,7 @@ cp .env.example .env
 docker compose --env-file .env up --build
 ```
 
-The first PostgreSQL startup applies the service migrations and synthetic inventory seed. The Orders and Inventory workers also ensure their inbox/outbox tables exist when an older local volume is reused. Keycloak imports the local `guardmesh` realm with the `demo-web` client and synthetic users. The named PostgreSQL volume is initialized only once; use a fresh isolated volume when testing a complete schema bootstrap.
+The first PostgreSQL startup applies the service migrations and synthetic inventory seed. Keycloak imports the local `guardmesh` realm with the `demo-web` client and synthetic users. The named PostgreSQL volume is initialized only once; use a fresh isolated volume when testing a complete schema bootstrap. Existing volumes must be migrated deliberately; workers do not create or repair schema objects at runtime.
 
 An accepted order is written as `PENDING_STOCK`, published through the durable Orders outbox, reserved atomically by Inventory, and finalized by the Orders inbox consumer. Duplicate event delivery is intentionally safe and does not decrement stock twice.
 
@@ -98,7 +98,7 @@ For recovery and performance evidence, see [`evaluation/scenarios.md`](evaluatio
 
 ## Documentation
 
-The README will be expanded with verified prerequisites, ports, environment setup, first-run steps, and test commands as the implementation makes them real.
+The commands and endpoints above describe the verified local workflow. Environment-specific production procedures must add TLS, secret injection, capacity limits, backup policy, and operator access controls.
 
 `dev` is the integration branch. `main` holds reviewed release baselines.
 
