@@ -11,13 +11,16 @@ export async function startOrdersWorkflow(): Promise<void> {
   const brokerUrl = process.env.RABBITMQ_URL;
   if (!databaseUrl || !brokerUrl) return;
 
+  let pool: pg.Pool | undefined;
+  let broker: Awaited<ReturnType<typeof connectWorkflowBroker>> | undefined;
   try {
-    const pool = new pg.Pool({ connectionString: databaseUrl });
+    pool = new pg.Pool({ connectionString: databaseUrl });
     await assertMigration(pool, "orders_schema_migrations", "001_create_orders");
     const repository = new PostgresOrderRepository(createOrdersDatabase(databaseUrl));
-    const broker = await connectWorkflowBroker(brokerUrl, { topologies: [ordersStockTopology], exchanges: [securityExchange] });
+    const workflowBroker = await connectWorkflowBroker(brokerUrl, { topologies: [ordersStockTopology], exchanges: [securityExchange] });
+    broker = workflowBroker;
     configureSecurityEventPublisher((event) => {
-      new RabbitMqPublisher(broker.channel, securityExchange, "security.event.v1").publish({
+      new RabbitMqPublisher(workflowBroker.channel, securityExchange, "security.event.v1").publish({
         ...event,
         traceId: event.traceId ?? currentTraceId(),
         traceparent: event.traceparent ?? currentTraceparent(),
@@ -27,11 +30,11 @@ export async function startOrdersWorkflow(): Promise<void> {
       publish: async (event) => {
         const type = typeof event.type === "string" ? event.type : undefined;
         if (!type) throw new Error("outbox event type is missing");
-        await new RabbitMqPublisher(broker.channel, workflowExchange, type).publishConfirmed(event);
+        await new RabbitMqPublisher(workflowBroker.channel, workflowExchange, type).publishConfirmed(event);
       },
     });
 
-    await consumeWithAck(broker.channel, "orders.stock-results", async (message) => {
+    await consumeWithAck(workflowBroker.channel, "orders.stock-results", async (message) => {
       const event = parseStockReservationResultEvent(message);
       if (!repository.applyStockOutcomeOnce) throw new Error("orders repository lacks inbox support");
       await repository.applyStockOutcomeOnce(event.eventId, event);
@@ -49,6 +52,8 @@ export async function startOrdersWorkflow(): Promise<void> {
     setInterval(() => void tick(), 1_000).unref();
   } catch (error) {
     console.error("orders workflow is unavailable", error);
+    await broker?.connection.close().catch(() => undefined);
+    await pool?.end().catch(() => undefined);
     setTimeout(() => void startOrdersWorkflow(), 2_000);
   }
 }

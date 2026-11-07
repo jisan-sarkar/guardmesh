@@ -10,8 +10,11 @@ export async function startSecurityWorkflow(security: SecurityService): Promise<
   try {
     const pool = process.env.DATABASE_URL ? new pg.Pool({ connectionString: process.env.DATABASE_URL }) : undefined;
     if (pool) {
-      await assertMigration(pool, "security_schema_migrations", "001_create_security");
-      await pool.end();
+      try {
+        await assertMigration(pool, "security_schema_migrations", "001_create_security");
+      } finally {
+        await pool.end();
+      }
     }
     const broker = await connectWorkflowBroker(brokerUrl, { topologies: [securityEventsTopology] });
     await consumeWithAck(broker.channel, "security.events", async (message) => {

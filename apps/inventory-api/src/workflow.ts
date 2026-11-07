@@ -13,13 +13,16 @@ export async function startInventoryWorkflow(): Promise<void> {
   const brokerUrl = process.env.RABBITMQ_URL;
   if (!databaseUrl || !brokerUrl) return;
 
+  let pool: pg.Pool | undefined;
+  let broker: Awaited<ReturnType<typeof connectWorkflowBroker>> | undefined;
   try {
-    const pool = new pg.Pool({ connectionString: databaseUrl });
+    pool = new pg.Pool({ connectionString: databaseUrl });
     await assertMigration(pool, "inventory_schema_migrations", "001_create_inventory");
     const store = new PostgresInventoryStore(createInventoryDatabase(databaseUrl));
-    const broker = await connectWorkflowBroker(brokerUrl, { topologies: [inventoryOrderTopology], exchanges: [securityExchange] });
+    const workflowBroker = await connectWorkflowBroker(brokerUrl, { topologies: [inventoryOrderTopology], exchanges: [securityExchange] });
+    broker = workflowBroker;
     configureSecurityEventPublisher((event) => {
-      new RabbitMqPublisher(broker.channel, securityExchange, "security.event.v1").publish({
+      new RabbitMqPublisher(workflowBroker.channel, securityExchange, "security.event.v1").publish({
         ...event,
         traceId: event.traceId ?? currentTraceId(),
         traceparent: event.traceparent ?? currentTraceparent(),
@@ -31,11 +34,11 @@ export async function startInventoryWorkflow(): Promise<void> {
         if (!type) throw new Error("outbox event type is missing");
         const exchange = type === "PRIVILEGED_ACTION" ? securityExchange : workflowExchange;
         const routingKey = type === "PRIVILEGED_ACTION" ? "security.event.v1" : type;
-        await new RabbitMqPublisher(broker.channel, exchange, routingKey).publishConfirmed(event);
+        await new RabbitMqPublisher(workflowBroker.channel, exchange, routingKey).publishConfirmed(event);
       },
     });
 
-    await consumeWithAck(broker.channel, "inventory.orders", async (message) => {
+    await consumeWithAck(workflowBroker.channel, "inventory.orders", async (message) => {
       await store.processOrderCreated(
         message,
         () => crypto.randomUUID(),
@@ -55,6 +58,8 @@ export async function startInventoryWorkflow(): Promise<void> {
     setInterval(() => void tick(), 1_000).unref();
   } catch (error) {
     console.error("inventory workflow is unavailable", error);
+    await broker?.connection.close().catch(() => undefined);
+    await pool?.end().catch(() => undefined);
     setTimeout(() => void startInventoryWorkflow(), 2_000);
   }
 }
