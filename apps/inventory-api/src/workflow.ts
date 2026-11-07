@@ -39,7 +39,7 @@ export async function startInventoryWorkflow(): Promise<void> {
       publish: async (event) => {
         const type = typeof event.type === "string" ? event.type : undefined;
         if (!type) throw new Error("outbox event type is missing");
-        new RabbitMqPublisher(broker.channel, workflowExchange, type).publish(event);
+        await new RabbitMqPublisher(broker.channel, workflowExchange, type).publishConfirmed(event);
       },
     });
 

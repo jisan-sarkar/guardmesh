@@ -50,6 +50,15 @@ describe("RabbitMQ transport", () => {
     );
   });
 
+  it("waits for publisher confirms when the channel supports them", async () => {
+    const publish = vi.fn().mockReturnValue(true);
+    const waitForConfirms = vi.fn().mockResolvedValue(undefined);
+    const publisher = new RabbitMqPublisher({ publish, waitForConfirms }, "guardmesh.events", "orders.order-created.v1");
+
+    await publisher.publishConfirmed({ eventId: "event-1", type: "orders.order-created.v1" });
+    expect(waitForConfirms).toHaveBeenCalledOnce();
+  });
+
   it("acknowledges successfully handled messages", async () => {
     const raw = { content: Buffer.from('{"eventId":"event-1"}') } as ConsumeMessage;
     const consume = vi.fn().mockImplementation(async (_queue, callback) => callback(raw));

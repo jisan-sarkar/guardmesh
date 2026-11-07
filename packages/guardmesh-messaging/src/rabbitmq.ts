@@ -31,10 +31,10 @@ export const securityEventsTopology: QueueTopology = {
 
 export async function connectWorkflowBroker(url: string): Promise<{
   connection: amqp.ChannelModel;
-  channel: amqp.Channel;
+  channel: amqp.ConfirmChannel;
 }> {
   const connection = await amqp.connect(url);
-  const channel = await connection.createChannel();
+  const channel = await connection.createConfirmChannel();
   await configureTopology(channel, inventoryOrderTopology);
   await configureTopology(channel, ordersStockTopology);
   await configureTopology(channel, securityEventsTopology);
@@ -71,7 +71,7 @@ export async function configureTopology(channel: Channel, topology: QueueTopolog
 
 export class RabbitMqPublisher {
   public constructor(
-    private readonly channel: Pick<Channel, "publish">,
+    private readonly channel: Pick<Channel, "publish"> & { waitForConfirms?: () => Promise<void> },
     private readonly exchange: string,
     private readonly routingKey: string,
   ) {}
@@ -96,6 +96,12 @@ export class RabbitMqPublisher {
     if (!accepted) {
       throw new Error("broker write buffer is full");
     }
+  }
+
+  public async publishConfirmed(event: Readonly<Record<string, unknown>>): Promise<void> {
+    this.publish(event);
+    const waitForConfirms = this.channel.waitForConfirms;
+    if (waitForConfirms) await waitForConfirms.call(this.channel);
   }
 }
 
