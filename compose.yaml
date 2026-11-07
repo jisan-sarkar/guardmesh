@@ -1,0 +1,129 @@
+name: guardmesh
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-guardmesh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
+      POSTGRES_DB: ${POSTGRES_DB:-guardmesh}
+    ports: ["5432:5432"]
+    volumes: [guardmesh-postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+    volumes: [guardmesh-rabbitmq:/var/lib/rabbitmq]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-local-only}
+    ports: ["8080:8080"]
+
+  opa:
+    image: openpolicyagent/opa:1.22.2
+    command: ["run", "--server", "--addr", ":8181", "/policies"]
+    volumes:
+      - ./packages/guardmesh-policy/policy:/policies:ro
+    ports: ["8181:8181"]
+
+  orders-api:
+    build:
+      context: .
+      dockerfile: infra/docker/node-app.Dockerfile
+    command: ["pnpm", "--filter", "@guardmesh/orders-api", "start"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      OPA_POLICY_URL: ${OPA_POLICY_URL}
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+      OIDC_JWKS_URI: ${OIDC_JWKS_URI}
+      ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
+    depends_on:
+      postgres: {condition: service_healthy}
+      opa: {condition: service_started}
+      keycloak: {condition: service_started}
+
+  inventory-api:
+    build:
+      context: .
+      dockerfile: infra/docker/node-app.Dockerfile
+    command: ["pnpm", "--filter", "@guardmesh/inventory-api", "start"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      OPA_POLICY_URL: ${OPA_POLICY_URL}
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+      OIDC_JWKS_URI: ${OIDC_JWKS_URI}
+      ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
+    depends_on:
+      postgres: {condition: service_healthy}
+      opa: {condition: service_started}
+      keycloak: {condition: service_started}
+
+  security-api:
+    build:
+      context: .
+      dockerfile: infra/docker/node-app.Dockerfile
+    command: ["pnpm", "--filter", "@guardmesh/security-api", "start"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+      OIDC_JWKS_URI: ${OIDC_JWKS_URI}
+      ACTOR_DIRECTORY_JSON: ${ACTOR_DIRECTORY_JSON}
+    depends_on:
+      postgres: {condition: service_healthy}
+      keycloak: {condition: service_started}
+
+  demo-web:
+    build:
+      context: .
+      dockerfile: infra/docker/node-app.Dockerfile
+    command: ["pnpm", "--filter", "@guardmesh/demo-web", "dev", "--", "--host", "0.0.0.0"]
+    environment:
+      VITE_OIDC_ISSUER: ${OIDC_ISSUER}
+      VITE_OIDC_CLIENT_ID: demo-web
+    depends_on: [orders-api, inventory-api, security-api]
+
+  traefik:
+    image: traefik:v3.3
+    command: ["--configFile=/etc/traefik/traefik.yml"]
+    ports: ["80:80"]
+    volumes:
+      - ./infra/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on: [demo-web, orders-api, inventory-api, security-api]
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    profiles: [observability]
+    ports: ["9090:9090"]
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.115.1
+    profiles: [observability]
+    command: ["--config=/etc/otelcol/config.yml"]
+    volumes:
+      - ./infra/observability/otel-collector.yml:/etc/otelcol/config.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: [observability]
+    ports: ["3003:3000"]
+    volumes:
+      - ./infra/observability/grafana-dashboard.json:/var/lib/grafana/dashboards/guardmesh.json:ro
+
+volumes:
+  guardmesh-postgres:
+  guardmesh-rabbitmq:
