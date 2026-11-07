@@ -14,7 +14,7 @@
     "@guardmesh/auth": "workspace:*",
     "@guardmesh/observability": "workspace:*",
     "@guardmesh/policy": "workspace:*",
-    "@nestjs/common": "^11.1.9"
+    "@nestjs/common": "^12.3.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
