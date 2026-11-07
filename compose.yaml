@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-guardmesh}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
       POSTGRES_DB: ${POSTGRES_DB:-guardmesh}
-    ports: ["${POSTGRES_PORT:-5432}:5432"]
+    ports: ["${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"]
     volumes:
       - guardmesh-postgres:/var/lib/postgresql/data
       - ./packages/guardmesh-orders-service/migrations/001_create_orders.sql:/docker-entrypoint-initdb.d/10-orders.sql:ro
@@ -25,7 +25,7 @@ services:
     image: rabbitmq:4-management-alpine
     hostname: rabbitmq
     command: ["sh", "-c", "rabbitmq-server & pid=$$!; until rabbitmq-diagnostics -q check_running; do sleep 1; done; rabbitmqctl import_definitions /etc/rabbitmq/definitions.json; wait $$pid"]
-    ports: ["${RABBITMQ_PORT:-5672}:5672", "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"]
+    ports: ["${RABBITMQ_BIND_ADDRESS:-127.0.0.1}:${RABBITMQ_PORT:-5672}:5672", "${RABBITMQ_BIND_ADDRESS:-127.0.0.1}:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"]
     volumes:
       - guardmesh-rabbitmq:/var/lib/rabbitmq
       - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
@@ -44,14 +44,14 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-local-only}
     volumes:
       - ./infra/keycloak/guardmesh-realm.json:/opt/keycloak/data/import/guardmesh-realm.json:ro
-    ports: ["${KEYCLOAK_PORT:-8080}:8080"]
+    ports: ["${KEYCLOAK_BIND_ADDRESS:-127.0.0.1}:${KEYCLOAK_PORT:-8080}:8080"]
 
   opa:
     image: openpolicyagent/opa:1.22.2
     command: ["run", "--server", "--addr", ":8181", "/policies"]
     volumes:
       - ./packages/guardmesh-policy/policy:/policies:ro
-    ports: ["${OPA_PORT:-8181}:8181"]
+    ports: ["${OPA_BIND_ADDRESS:-127.0.0.1}:${OPA_PORT:-8181}:8181"]
 
   orders-api:
     build:
@@ -139,7 +139,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.1.0
     profiles: [observability]
-    ports: ["${PROMETHEUS_PORT:-9090}:9090"]
+    ports: ["${PROMETHEUS_BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}:9090"]
     volumes:
       - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
@@ -153,12 +153,12 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.65
     profiles: [observability]
-    ports: ["${JAEGER_PORT:-16686}:16686"]
+    ports: ["${JAEGER_BIND_ADDRESS:-127.0.0.1}:${JAEGER_PORT:-16686}:16686"]
 
   grafana:
     image: grafana/grafana:11.4.0
     profiles: [observability]
-    ports: ["${GRAFANA_PORT:-3003}:3000"]
+    ports: ["${GRAFANA_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_PORT:-3003}:3000"]
     volumes:
       - ./infra/observability/grafana-dashboard.json:/var/lib/grafana/dashboards/guardmesh.json:ro
 

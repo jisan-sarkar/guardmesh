@@ -81,7 +81,7 @@ The first PostgreSQL startup applies the service migrations and synthetic invent
 
 An accepted order is written as `PENDING_STOCK`, published through the durable Orders outbox, reserved atomically by Inventory, and finalized by the Orders inbox consumer. Duplicate event delivery is intentionally safe and does not decrement stock twice.
 
-Host ports are configurable through `POSTGRES_PORT`, `RABBITMQ_PORT`, `RABBITMQ_MANAGEMENT_PORT`, `KEYCLOAK_PORT`, `OPA_PORT`, and `TRAEFIK_PORT` when a default port is already in use.
+Host ports are configurable through `POSTGRES_PORT`, `RABBITMQ_PORT`, `RABBITMQ_MANAGEMENT_PORT`, `KEYCLOAK_PORT`, `OPA_PORT`, and `TRAEFIK_PORT` when a default port is already in use. Local-only dependencies bind to loopback by default; set the corresponding `*_BIND_ADDRESS` variable only when a controlled development environment needs another interface. The Traefik gateway is the only service published broadly by default.
 
 Health endpoints are available through the gateway at `/api/orders/health/live`, `/api/inventory/health/live`, and `/api/security/health/live`. API routes are `/api/orders`, `/api/inventory`, and `/api/security`.
 
