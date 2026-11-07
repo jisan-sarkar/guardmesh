@@ -11,7 +11,7 @@ import type { PolicyEnforcementAdapter } from "@guardmesh/policy";
 import { PolicyDecisionError } from "@guardmesh/policy";
 import type { InventoryStore } from "./store.js";
 import { publishSecurityEvent } from "@guardmesh/messaging";
-import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
+import { currentTraceId, currentTraceparent, defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 import { z } from "zod";
 
 const stockAdjustmentSchema = z.object({
@@ -176,6 +176,8 @@ export class InventoryService {
       type: "PRIVILEGED_ACTION",
       occurredAt: this.clock(),
       correlationId: adjustment.sku,
+      traceId: currentTraceId(),
+      traceparent: currentTraceparent(),
       actorId: actor.actorId,
       action: "inventory.adjust",
       outcome: "ALLOW",
@@ -226,6 +228,8 @@ export class InventoryEventConsumer {
       correlationId: event.correlationId,
       causationId: event.eventId,
       producer: "inventory-api",
+      traceId: event.traceId,
+      traceparent: event.traceparent,
       payload: {
         orderId: result.reservation.orderId,
         requestFingerprint: result.reservation.requestFingerprint,

@@ -1,7 +1,7 @@
 import { parseStockReservationResultEvent } from "@guardmesh/events";
 import { configureSecurityEventPublisher, connectWorkflowBroker, consumeWithAck, ordersStockTopology, RabbitMqPublisher, securityExchange, workflowExchange } from "@guardmesh/messaging";
 import { PostgresOutboxRelay } from "@guardmesh/outbox";
-import { defaultReadiness } from "@guardmesh/observability";
+import { currentTraceId, currentTraceparent, defaultReadiness } from "@guardmesh/observability";
 import pg from "pg";
 
 import { createOrdersDatabase, PostgresOrderRepository } from "@guardmesh/orders-service";
@@ -16,7 +16,11 @@ export async function startOrdersWorkflow(): Promise<void> {
     const repository = new PostgresOrderRepository(createOrdersDatabase(databaseUrl));
     const broker = await connectWorkflowBroker(brokerUrl, { topologies: [ordersStockTopology], exchanges: [securityExchange] });
     configureSecurityEventPublisher((event) => {
-      new RabbitMqPublisher(broker.channel, securityExchange, "security.event.v1").publish(event);
+      new RabbitMqPublisher(broker.channel, securityExchange, "security.event.v1").publish({
+        ...event,
+        traceId: event.traceId ?? currentTraceId(),
+        traceparent: event.traceparent ?? currentTraceparent(),
+      });
     });
     const relay = new PostgresOutboxRelay(pool, "orders_outbox", {
       publish: async (event) => {

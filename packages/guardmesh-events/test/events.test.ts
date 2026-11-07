@@ -22,6 +22,14 @@ describe("event contracts", () => {
     expect(parseOrderCreatedEvent(event)).toEqual(event);
   });
 
+  it("accepts bounded trace context on event envelopes", () => {
+    expect(parseOrderCreatedEvent({
+      ...event,
+      traceId: "0123456789abcdef0123456789abcdef",
+      traceparent: "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+    })).toMatchObject({ traceId: expect.any(String), traceparent: expect.any(String) });
+  });
+
   it("rejects a mismatched producer or event type", () => {
     expect(() => parseOrderCreatedEvent({ ...event, producer: "inventory-api" })).toThrow();
     expect(() => parseOrderCreatedEvent({ ...event, type: "orders.order-created.v2" })).toThrow();

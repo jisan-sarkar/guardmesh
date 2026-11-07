@@ -9,7 +9,7 @@ import {
 } from "@guardmesh/orders-domain";
 import { PolicyDecisionError, type PolicyEnforcementAdapter } from "@guardmesh/policy";
 import { publishSecurityEvent } from "@guardmesh/messaging";
-import { defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
+import { currentTraceId, currentTraceparent, defaultMetrics, guardMeshMetrics } from "@guardmesh/observability";
 
 const createOrderInputSchema = z.object({
   requestFingerprint: z.string().min(1),
@@ -154,6 +154,8 @@ export class OrdersService {
           occurredAt: order.createdAt,
           correlationId: order.orderId,
           producer: "orders-api",
+          traceId: currentTraceId(),
+          traceparent: currentTraceparent(),
           payload: {
             orderId: order.orderId,
             requestFingerprint: order.requestFingerprint,

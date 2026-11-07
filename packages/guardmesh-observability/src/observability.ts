@@ -1,4 +1,4 @@
-import { context, trace, type Span, type Tracer } from "@opentelemetry/api";
+import { context, propagation, trace, type Span, type Tracer } from "@opentelemetry/api";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
@@ -119,4 +119,10 @@ export function currentTraceId(): string | undefined {
   const span = trace.getSpan(context.active());
   const traceId = span?.spanContext().traceId;
   return traceId && traceId !== "00000000000000000000000000000000" ? traceId : undefined;
+}
+
+export function currentTraceparent(): string | undefined {
+  const carrier: { traceparent?: string } = {};
+  propagation.inject(context.active(), carrier);
+  return carrier.traceparent;
 }

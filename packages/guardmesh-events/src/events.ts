@@ -22,6 +22,8 @@ export const orderCreatedEventSchema = z.object({
   correlationId: z.string().min(1),
   causationId: z.string().min(1).optional(),
   producer: z.literal("orders-api"),
+  traceId: z.string().regex(/^[a-f0-9]{32}$/u).optional(),
+  traceparent: z.string().regex(/^00-[a-f0-9]{32}-[a-f0-9]{16}-[0-9a-f]{2}$/u).optional(),
   payload: orderCreatedPayloadSchema,
 });
 
@@ -33,6 +35,8 @@ export const stockReservationResultEventSchema = z.object({
   correlationId: z.string().min(1),
   causationId: z.string().min(1),
   producer: z.literal("inventory-api"),
+  traceId: z.string().regex(/^[a-f0-9]{32}$/u).optional(),
+  traceparent: z.string().regex(/^00-[a-f0-9]{32}-[a-f0-9]{16}-[0-9a-f]{2}$/u).optional(),
   payload: stockReservationResultPayloadSchema,
 });
 

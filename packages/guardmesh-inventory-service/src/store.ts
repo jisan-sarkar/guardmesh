@@ -320,6 +320,8 @@ export class PostgresInventoryStore implements InventoryStore {
         correlationId: event.correlationId,
         causationId: event.eventId,
         producer: "inventory-api",
+        traceId: event.traceId,
+        traceparent: event.traceparent,
         payload: {
           orderId: event.payload.orderId,
           requestFingerprint: event.payload.requestFingerprint,

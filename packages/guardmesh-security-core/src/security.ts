@@ -15,6 +15,8 @@ export const securityEventSchema = z.object({
   ]),
   occurredAt: z.string().datetime(),
   correlationId: z.string().min(1),
+  traceId: z.string().regex(/^[a-f0-9]{32}$/u).optional(),
+  traceparent: z.string().regex(/^00-[a-f0-9]{32}-[a-f0-9]{16}-[0-9a-f]{2}$/u).optional(),
   actorId: z.string().min(1).optional(),
   action: z.string().min(1),
   outcome: z.enum(["ALLOW", "DENY", "FAILURE"]),
