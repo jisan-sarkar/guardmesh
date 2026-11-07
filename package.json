@@ -6,7 +6,10 @@
   "packageManager": "pnpm@12.18.0",
   "scripts": {
     "test": "pnpm --recursive --if-present test",
-    "typecheck": "pnpm --recursive --if-present typecheck"
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "build": "pnpm --recursive --if-present build",
+    "policy:test": "opa test packages/guardmesh-policy/policy",
+    "compose:config": "docker compose --env-file .env.example config"
   },
   "engines": {
     "node": ">=24.22.0 <25"

@@ -1,0 +1,39 @@
+name: GuardMesh CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm build
+      - name: Install OPA
+        run: |
+          curl -fsSL https://openpolicyagent.org/downloads/v1.22.2/opa_linux_amd64_static -o /tmp/opa
+          chmod 700 /tmp/opa
+      - run: /tmp/opa test packages/guardmesh-policy/policy
+      - run: pnpm audit --audit-level high
+
+  compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --env-file .env.example config
