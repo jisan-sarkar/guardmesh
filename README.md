@@ -31,7 +31,7 @@ The first release will prove, with tests and documented experiments:
 2. Fail-closed behavior when policy decisions are unavailable or invalid.
 3. Replay-safe order and inventory coordination with bounded retries and dead-letter handling.
 4. Structured, redacted security events and explainable alert rules.
-5. Opt-in OTLP telemetry for service HTTP work plus application metrics; cross-service trace correlation remains an evaluation item.
+5. Opt-in OTLP telemetry for service HTTP work, application metrics, and W3C trace-context propagation; end-to-end trace backend evidence remains an evaluation item.
 
 To enable the optional telemetry stack, set `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` in `.env` and run `docker compose --profile observability --env-file .env up --build`. Jaeger is available at `http://localhost:16686`; telemetry export is opt-in so the core profile does not require the collector.
 
