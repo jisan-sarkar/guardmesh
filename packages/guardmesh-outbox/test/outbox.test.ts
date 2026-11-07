@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { InMemoryOutboxStore, OutboxRelay } from "../src/outbox.js";
+import { InMemoryOutboxStore, OutboxRelay, PostgresOutboxRelay } from "../src/outbox.js";
 
 const record = {
   eventId: "event-1",
@@ -45,5 +45,31 @@ describe("outbox relay", () => {
       failed: 0,
     });
     expect(publish).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the database claim open while publishing", async () => {
+    let released = false;
+    const queries: string[] = [];
+    const client = {
+      query: vi.fn(async <T>(sql: string) => {
+        queries.push(sql);
+        if (sql.includes("SELECT event_id")) {
+          return { rows: [{ event_id: record.eventId, payload_json: record.payload }] } as T;
+        }
+        return { rows: [] } as T;
+      }),
+      release: vi.fn(() => {
+        released = true;
+      }),
+    };
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const publish = vi.fn(async () => {
+      expect(released).toBe(false);
+    });
+
+    await expect(new PostgresOutboxRelay(pool as never, "orders_outbox", { publish }).runOnce(1))
+      .resolves.toEqual({ published: 1, failed: 0 });
+    expect(queries).toEqual(expect.arrayContaining(["BEGIN", "COMMIT"]));
+    expect(released).toBe(true);
   });
 });
