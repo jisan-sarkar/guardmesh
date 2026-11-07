@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: guardmesh-orders
+    static_configs:
+      - targets: ["orders-api:3000"]
+  - job_name: guardmesh-inventory
+    static_configs:
+      - targets: ["inventory-api:3001"]
+  - job_name: guardmesh-security
+    static_configs:
+      - targets: ["security-api:3002"]

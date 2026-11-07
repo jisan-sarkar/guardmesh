@@ -1,0 +1,45 @@
+http:
+  routers:
+    demo-web:
+      entryPoints: [web]
+      rule: "PathPrefix(`/`)"
+      service: demo-web
+    orders-api:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/orders`)"
+      service: orders-api
+      middlewares: [baseline-rate-limit]
+    inventory-api:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/inventory`)"
+      service: inventory-api
+      middlewares: [baseline-rate-limit]
+    security-api:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/security`)"
+      service: security-api
+      middlewares: [baseline-rate-limit]
+
+  services:
+    demo-web:
+      loadBalancer:
+        servers:
+          - url: "http://demo-web:5173"
+    orders-api:
+      loadBalancer:
+        servers:
+          - url: "http://orders-api:3000"
+    inventory-api:
+      loadBalancer:
+        servers:
+          - url: "http://inventory-api:3001"
+    security-api:
+      loadBalancer:
+        servers:
+          - url: "http://security-api:3002"
+
+  middlewares:
+    baseline-rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200

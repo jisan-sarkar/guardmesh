@@ -1,0 +1,10 @@
+{
+  "title": "GuardMesh security and workflow overview",
+  "schemaVersion": 39,
+  "panels": [
+    {"type": "stat", "title": "Authorization denials", "targets": [{"expr": "guardmesh_authorization_denied_total"}]},
+    {"type": "stat", "title": "Policy failures", "targets": [{"expr": "guardmesh_policy_failures_total"}]},
+    {"type": "stat", "title": "Outbox backlog", "targets": [{"expr": "guardmesh_outbox_backlog"}]},
+    {"type": "stat", "title": "Dead letters", "targets": [{"expr": "guardmesh_broker_dead_letters_total"}]}
+  ]
+}
