@@ -163,7 +163,9 @@ export type ConsumeRetryOptions = Readonly<{
 }>;
 
 export async function consumeWithAck(
-  channel: Pick<Channel, "consume" | "ack" | "nack"> & Partial<Pick<Channel, "publish">>,
+  channel: Pick<Channel, "consume" | "ack" | "nack"> & Partial<Pick<Channel, "publish" | "on" | "removeListener">> & {
+    waitForConfirms?: () => Promise<void>;
+  },
   queue: string,
   handler: MessageHandler,
   retryOptions?: ConsumeRetryOptions,
@@ -182,17 +184,36 @@ export async function consumeWithAck(
       const canRetry =
         retryOptions !== undefined && attempt < retryOptions.maxAttempts && publish !== undefined;
       if (canRetry) {
-        const accepted = publish(
-          retryOptions.retryExchange,
-          retryOptions.retryRoutingKey,
-          raw.content,
-          {
-            persistent: true,
-            contentType: raw.properties?.contentType ?? "application/json",
-            headers: { ...headers, "x-retry-count": attempt + 1 },
-          },
-        );
-        if (accepted) {
+        const messageId = raw.properties?.messageId;
+        let returned = false;
+        let retryPublished = false;
+        const onReturn = (message: { properties?: { messageId?: string } }) => {
+          if (messageId === undefined || message.properties?.messageId === messageId) returned = true;
+        };
+        channel.on?.("return", onReturn);
+        try {
+          const accepted = publish(
+            retryOptions.retryExchange,
+            retryOptions.retryRoutingKey,
+            raw.content,
+            {
+              persistent: true,
+              mandatory: true,
+              contentType: raw.properties?.contentType ?? "application/json",
+              ...(messageId ? { messageId } : {}),
+              ...(raw.properties?.correlationId ? { correlationId: raw.properties.correlationId } : {}),
+              headers: { ...headers, "x-retry-count": attempt + 1 },
+            },
+          );
+          if (!accepted) throw new Error("broker write buffer is full");
+          if (channel.waitForConfirms) await channel.waitForConfirms();
+          retryPublished = !returned;
+        } catch {
+          // Fall through to a non-requeue nack so the broker's DLX policy owns failure.
+        } finally {
+          channel.removeListener?.("return", onReturn);
+        }
+        if (retryPublished) {
           channel.ack(raw);
           return;
         }

@@ -138,4 +138,33 @@ describe("RabbitMQ transport", () => {
     expect(ack).toHaveBeenCalledWith(raw);
     expect(nack).not.toHaveBeenCalled();
   });
+
+  it("does not acknowledge a retry that is returned by the broker", async () => {
+    const listeners = new Map<string, (message: { properties?: { messageId?: string } }) => void>();
+    const raw = {
+      content: Buffer.from("not-json"),
+      properties: { messageId: "event-1", headers: { "x-retry-count": 1 } },
+    } as unknown as ConsumeMessage;
+    const ack = vi.fn();
+    const nack = vi.fn();
+    const channel = {
+      consume: vi.fn().mockImplementation(async (_queue, callback) => callback(raw)),
+      ack,
+      nack,
+      publish: vi.fn().mockImplementation(() => {
+        listeners.get("return")?.({ properties: { messageId: "event-1" } });
+        return true;
+      }),
+      waitForConfirms: vi.fn().mockResolvedValue(undefined),
+      on: (event: string, listener: (message: { properties?: { messageId?: string } }) => void) => listeners.set(event, listener),
+      removeListener: (event: string) => listeners.delete(event),
+    };
+
+    await consumeWithAck(channel as never, "inventory.orders", async () => {
+      throw new Error("handler failure");
+    }, { retryExchange: "guardmesh.events", retryRoutingKey: "orders.order-created.v1", maxAttempts: 3 });
+
+    expect(ack).not.toHaveBeenCalled();
+    expect(nack).toHaveBeenCalledWith(raw, false, false);
+  });
 });
