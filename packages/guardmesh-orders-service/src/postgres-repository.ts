@@ -152,6 +152,12 @@ export class PostgresOrderRepository implements OrderRepository {
 
       const current = mapRow(row);
       if (current.status !== "PENDING_STOCK") {
+        if (
+          current.requestFingerprint !== outcome.requestFingerprint ||
+          current.locationId !== outcome.locationId
+        ) {
+          throw new Error("conflicting stock outcome for finalized order");
+        }
         const matchesFinalState =
           (current.status === "CONFIRMED" && outcome.result === "RESERVED") ||
           (current.status === "REJECTED" && outcome.result === "REJECTED");

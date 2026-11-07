@@ -53,6 +53,18 @@ describe("inventory event consumer", () => {
     expect(consumer.getState().items["sku-1"]?.available).toBe(1);
   });
 
+  it("rejects a conflicting command for an existing order", () => {
+    const consumer = createConsumer();
+    consumer.handleOrderCreated(event);
+
+    expect(() => consumer.handleOrderCreated({
+      ...event,
+      eventId: "event-2",
+      payload: { ...event.payload, requestFingerprint: "fingerprint-2", items: [{ sku: "sku-1", quantity: 2 }] },
+    })).toThrow("conflicting reservation command for order");
+    expect(consumer.getState().items["sku-1"]?.available).toBe(1);
+  });
+
   it("emits a rejection without decrementing insufficient stock", () => {
     const consumer = createConsumer();
     const result = consumer.handleOrderCreated({

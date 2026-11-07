@@ -10,6 +10,7 @@ import {
 
 import {
   reservationLineSchema,
+  reservationLinesEquivalent,
   reserveStockCommandSchema,
   type InventoryItem,
   type InventoryState,
@@ -168,9 +169,15 @@ export class PostgresInventoryStore implements InventoryStore {
         .selectFrom("reservations")
         .selectAll()
         .where("order_id", "=", command.orderId)
-        .where("request_fingerprint", "=", command.requestFingerprint)
         .executeTakeFirst();
       if (existing) {
+        if (
+          existing.request_fingerprint !== command.requestFingerprint ||
+          existing.location_id !== command.locationId ||
+          !reservationLinesEquivalent(existing.items_json, command.items)
+        ) {
+          throw new Error("conflicting reservation command for order");
+        }
         return {
           orderId: existing.order_id,
           requestFingerprint: existing.request_fingerprint,
@@ -264,7 +271,8 @@ export class PostgresInventoryStore implements InventoryStore {
       if (existing) {
         if (
           existing.request_fingerprint !== event.payload.requestFingerprint ||
-          existing.location_id !== event.payload.locationId
+          existing.location_id !== event.payload.locationId ||
+          !reservationLinesEquivalent(existing.items_json, event.payload.items)
         ) {
           throw new Error("conflicting reservation command for order");
         }

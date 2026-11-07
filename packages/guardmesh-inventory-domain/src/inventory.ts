@@ -35,6 +35,25 @@ export type InventoryState = Readonly<{
   reservations: Readonly<Record<string, Reservation>>;
 }>;
 
+export function reservationLinesEquivalent(left: unknown, right: unknown): boolean {
+  const canonicalize = (input: unknown): string => {
+    const parsed = typeof input === "string" ? JSON.parse(input) : input;
+    const quantities = new Map<string, number>();
+    for (const line of reservationLineSchema.array().parse(parsed)) {
+      quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
+    }
+    return JSON.stringify(
+      [...quantities.entries()].sort(([leftSku], [rightSku]) => leftSku.localeCompare(rightSku)),
+    );
+  };
+
+  try {
+    return canonicalize(left) === canonicalize(right);
+  } catch {
+    return false;
+  }
+}
+
 export class InventoryCommandError extends Error {
   public constructor(message: string) {
     super(message);
@@ -47,13 +66,16 @@ export function reserveStock(
   input: unknown,
 ): Readonly<{ state: InventoryState; reservation: Reservation }> {
   const command = reserveStockCommandSchema.parse(input);
-  const replay = Object.values(state.reservations).find(
-    (reservation) =>
-      reservation.orderId === command.orderId &&
-      reservation.requestFingerprint === command.requestFingerprint,
-  );
+  const replay = Object.values(state.reservations).find((reservation) => reservation.orderId === command.orderId);
 
   if (replay) {
+    if (
+      replay.requestFingerprint !== command.requestFingerprint ||
+      replay.locationId !== command.locationId ||
+      !reservationLinesEquivalent(replay.items, command.items)
+    ) {
+      throw new InventoryCommandError("conflicting reservation command for order");
+    }
     return { state, reservation: replay };
   }
 

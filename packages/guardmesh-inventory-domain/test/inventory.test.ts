@@ -63,6 +63,17 @@ describe("inventory domain", () => {
     expect(second.state).toEqual(first.state);
   });
 
+  it("rejects a conflicting command for an existing order", () => {
+    const first = reserveStock(initialState, command);
+
+    expect(() => reserveStock(first.state, {
+      ...command,
+      requestFingerprint: "fingerprint-2",
+      items: [{ sku: "sku-1", quantity: 1 }],
+    })).toThrow("conflicting reservation command for order");
+    expect(first.state.items["sku-1"]?.available).toBe(3);
+  });
+
   it("rejects an item owned by another location", () => {
     expect(() =>
       reserveStock(initialState, { ...command, locationId: "loc-b" }),
