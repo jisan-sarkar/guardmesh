@@ -1,0 +1,27 @@
+{
+  "name": "@guardmesh/inventory-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@guardmesh/contracts": "workspace:*",
+    "@guardmesh/events": "workspace:*",
+    "@guardmesh/inventory-domain": "workspace:*",
+    "@guardmesh/policy": "workspace:*",
+    "kysely": "^0.28.8",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
+  }
+}
